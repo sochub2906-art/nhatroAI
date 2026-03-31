@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CheckSquare, Edit, ExternalLink, Plus, PlusCircle, Square, Trash2, XCircle } from 'lucide-react';
+import { CheckSquare, Edit, ExternalLink, LayoutGrid, List, Plus, PlusCircle, Square, Trash2, XCircle } from 'lucide-react';
 import { formatCurrency, SERVICE_PRESETS, useApp } from '../AppContext';
 import { Contract, ContractService } from '../types';
 import { getRoomOccupancyCount } from '../utils/roomOccupancy';
@@ -11,6 +11,7 @@ export default function Contracts() {
     const [isEditMode, setIsEditMode] = useState(false);
     const [customServiceName, setCustomServiceName] = useState('');
     const [customServicePrice, setCustomServicePrice] = useState(0);
+    const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
 
     const initialFormState: Contract = {
         id: '',
@@ -105,83 +106,148 @@ export default function Contracts() {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold">Hợp đồng thuê</h2>
+            <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                <div>
+                    <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Hợp đồng thuê</h2>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Quản lý hợp đồng, giá thuê và dịch vụ phụ.</p>
+                </div>
                 <button
                     type="button"
                     onClick={handleOpenCreate}
-                    className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 font-medium text-white shadow-lg shadow-blue-600/20 hover:bg-blue-700"
+                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 text-sm font-medium text-white shadow-lg shadow-blue-600/20"
                 >
                     <Plus className="h-4 w-4" /> Tạo hợp đồng
                 </button>
             </div>
 
-            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            {/* Mobile view toggle */}
+            <div className="flex items-center gap-2 lg:hidden">
+                <button type="button" onClick={() => setViewMode('card')} className={`inline-flex h-10 w-10 items-center justify-center rounded-xl transition ${viewMode === 'card' ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`} title="Dạng card">
+                    <LayoutGrid className="h-5 w-5" />
+                </button>
+                <button type="button" onClick={() => setViewMode('list')} className={`inline-flex h-10 w-10 items-center justify-center rounded-xl transition ${viewMode === 'list' ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`} title="Dạng danh sách">
+                    <List className="h-5 w-5" />
+                </button>
+                <span className="text-xs text-slate-400 dark:text-slate-500">{contracts.length} hợp đồng</span>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className={`grid gap-4 lg:hidden ${viewMode !== 'card' ? 'hidden' : ''}`}>
+                {contracts.length === 0 && <div className="rounded-[1.75rem] border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-500 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">Chưa có hợp đồng nào.</div>}
+                {contracts.map(contract => (
+                    <article key={contract.id} className="rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                        <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                                <div className="truncate text-lg font-semibold text-slate-900 dark:text-white">
+                                    <Link to={`/app/rooms/${contract.roomId}`} className="hover:text-blue-500">{getRoomName(contract.roomId)}</Link>
+                                </div>
+                                <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">{contract.id}</div>
+                            </div>
+                            <span className={`inline-flex shrink-0 rounded-full border px-3 py-1 text-xs font-medium ${contract.isActive ? 'border-green-200 bg-green-50 text-green-600 dark:border-green-800 dark:bg-green-900/20' : 'border-red-200 bg-red-50 text-red-500 dark:border-red-800 dark:bg-red-900/20'}`}>
+                                {contract.isActive ? 'Hiệu lực' : 'Hết hạn'}
+                            </span>
+                        </div>
+                        <div className="mt-4 space-y-2 text-sm text-slate-600 dark:text-slate-300">
+                            <div>Khách thuê: <Link to={`/app/customers/${contract.customerId}`} className="font-medium text-blue-600 dark:text-blue-400">{getCustomerName(contract.customerId)}</Link></div>
+                            <div>Ngày vào: {contract.startDate} — Hết hạn: {contract.endDate || 'Chưa xác định'}</div>
+                            <div className="text-lg font-semibold text-blue-600 dark:text-blue-400">{formatCurrency(contract.price)}/tháng</div>
+                            {contract.extraServices && contract.extraServices.filter(s => s.enabled).length > 0 && (
+                                <div className="flex flex-wrap gap-1.5 pt-1">
+                                    {contract.extraServices.filter(s => s.enabled).map(service => (
+                                        <span key={service.id} className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
+                                            {service.name}
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                        <div className="mt-4 flex gap-2">
+                            <button type="button" onClick={() => handleOpenEdit(contract)} className="flex-1 min-h-[48px] rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
+                                Chỉnh sửa
+                            </button>
+                            {contract.isActive && (
+                                <button type="button" onClick={() => terminateContract(contract.id)} className="inline-flex min-h-[48px] items-center justify-center rounded-2xl border border-rose-200 px-5 py-3 text-sm font-medium text-rose-600 transition hover:bg-rose-50 dark:border-rose-900/30 dark:text-rose-300 dark:hover:bg-rose-950/20">
+                                    <XCircle className="mr-1.5 h-4 w-4" /> Kết thúc
+                                </button>
+                            )}
+                        </div>
+                    </article>
+                ))}
+            </div>
+
+            {/* Mobile List View */}
+            <div className={`space-y-2 lg:hidden ${viewMode !== 'list' ? 'hidden' : ''}`}>
+                {contracts.length === 0 && <div className="rounded-[1.75rem] border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-500 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">Chưa có hợp đồng nào.</div>}
+                {contracts.map(contract => (
+                    <div key={contract.id} onClick={() => handleOpenEdit(contract)} className="flex cursor-pointer items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm transition hover:bg-slate-50 active:bg-slate-100 dark:border-slate-800 dark:bg-slate-900 dark:hover:bg-slate-800">
+                        <div className="min-w-0 flex-1">
+                            <div className="truncate font-semibold text-slate-900 dark:text-white">{getRoomName(contract.roomId)} — {getCustomerName(contract.customerId)}</div>
+                            <div className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">{contract.id} • {formatCurrency(contract.price)}/tháng</div>
+                        </div>
+                        <span className={`inline-flex shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium ${contract.isActive ? 'border-green-200 bg-green-50 text-green-600 dark:border-green-800 dark:bg-green-900/20' : 'border-red-200 bg-red-50 text-red-500 dark:border-red-800 dark:bg-red-900/20'}`}>
+                            {contract.isActive ? 'Hiệu lực' : 'Hết hạn'}
+                        </span>
+                    </div>
+                ))}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:block">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
-                        <thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500 dark:bg-slate-800">
+                        <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-800/80 dark:text-slate-400">
                             <tr>
-                                <th className="p-4">Mã HĐ</th>
-                                <th className="p-4">Phòng</th>
-                                <th className="p-4">Khách thuê</th>
-                                <th className="p-4">Ngày vào</th>
-                                <th className="p-4">Hết hạn</th>
-                                <th className="p-4">Giá thuê</th>
-                                <th className="p-4">Dịch vụ phụ</th>
-                                <th className="p-4">Trạng thái</th>
-                                <th className="p-4">Thao tác</th>
+                                <th className="px-5 py-4">Mã HĐ</th>
+                                <th className="px-5 py-4">Phòng</th>
+                                <th className="px-5 py-4">Khách thuê</th>
+                                <th className="px-5 py-4">Ngày vào</th>
+                                <th className="px-5 py-4">Hết hạn</th>
+                                <th className="px-5 py-4">Giá thuê</th>
+                                <th className="px-5 py-4">Dịch vụ phụ</th>
+                                <th className="px-5 py-4">Trạng thái</th>
+                                <th className="px-5 py-4 text-right">Thao tác</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                             {contracts.map(contract => (
                                 <tr key={contract.id} className="transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                                    <td className="p-4 font-medium">{contract.id}</td>
-                                    <td className="p-4">
+                                    <td className="px-5 py-4 font-medium text-slate-900 dark:text-white">{contract.id}</td>
+                                    <td className="px-5 py-4">
                                         <Link to={`/app/rooms/${contract.roomId}`} className="flex items-center gap-1 transition hover:text-blue-500">
                                             {getRoomName(contract.roomId)} <ExternalLink className="h-3 w-3" />
                                         </Link>
                                     </td>
-                                    <td className="p-4">
+                                    <td className="px-5 py-4">
                                         <Link to={`/app/customers/${contract.customerId}`} className="transition hover:text-blue-500">
                                             {getCustomerName(contract.customerId)}
                                         </Link>
                                     </td>
-                                    <td className="p-4 text-slate-500">{contract.startDate}</td>
-                                    <td className="p-4 text-slate-500">{contract.endDate}</td>
-                                    <td className="p-4 font-medium text-blue-500">{formatCurrency(contract.price)}</td>
-                                    <td className="p-4">
+                                    <td className="px-5 py-4 text-slate-500">{contract.startDate}</td>
+                                    <td className="px-5 py-4 text-slate-500">{contract.endDate}</td>
+                                    <td className="px-5 py-4 font-medium text-blue-500">{formatCurrency(contract.price)}</td>
+                                    <td className="px-5 py-4">
                                         {contract.extraServices && contract.extraServices.filter(service => service.enabled).length > 0 ? (
                                             <div className="flex flex-wrap gap-1">
                                                 {contract.extraServices.filter(service => service.enabled).map(service => (
-                                                    <span key={service.id} className="rounded bg-blue-50 px-1.5 py-0.5 text-xs text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
+                                                    <span key={service.id} className="rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
                                                         {service.name}
                                                     </span>
                                                 ))}
                                             </div>
                                         ) : <span className="text-xs text-slate-400">Không có</span>}
                                     </td>
-                                    <td className="p-4">
-                                        <span className={`rounded-full border px-2 py-1 text-xs font-medium ${contract.isActive ? 'border-green-200 bg-green-50 text-green-600 dark:border-green-800 dark:bg-green-900/20' : 'border-red-200 bg-red-50 text-red-500 dark:border-red-800 dark:bg-red-900/20'}`}>
+                                    <td className="px-5 py-4">
+                                        <span className={`rounded-full border px-3 py-1 text-xs font-medium ${contract.isActive ? 'border-green-200 bg-green-50 text-green-600 dark:border-green-800 dark:bg-green-900/20' : 'border-red-200 bg-red-50 text-red-500 dark:border-red-800 dark:bg-red-900/20'}`}>
                                             {contract.isActive ? 'Hiệu lực' : 'Hết hạn'}
                                         </span>
                                     </td>
-                                    <td className="p-4">
-                                        <div className="flex gap-1">
-                                            <button
-                                                type="button"
-                                                onClick={() => handleOpenEdit(contract)}
-                                                title="Sửa"
-                                                className="rounded-lg p-1.5 text-slate-400 transition hover:bg-blue-50 hover:text-blue-500 dark:hover:bg-blue-900/20"
-                                            >
+                                    <td className="px-5 py-4">
+                                        <div className="flex items-center justify-end gap-2">
+                                            <button type="button" onClick={() => handleOpenEdit(contract)} title="Sửa" className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
                                                 <Edit className="h-4 w-4" />
                                             </button>
                                             {contract.isActive && (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => terminateContract(contract.id)}
-                                                    title="Kết thúc"
-                                                    className="rounded-lg p-1.5 text-slate-400 transition hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
-                                                >
+                                                <button type="button" onClick={() => terminateContract(contract.id)} title="Kết thúc" className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-rose-200 text-rose-600 transition hover:bg-rose-50 dark:border-rose-900/30 dark:text-rose-300 dark:hover:bg-rose-950/20">
                                                     <XCircle className="h-4 w-4" />
                                                 </button>
                                             )}
