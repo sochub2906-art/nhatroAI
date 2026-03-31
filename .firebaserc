@@ -1,0 +1,13 @@
+{
+  "projects": {
+    "default": "nhatroai"
+  },
+  "targets": {
+    "nhatroai": {
+      "hosting": {
+        "nhatroai": ["nhatroai"],
+        "nhatrobe": ["nhatrobe"]
+      }
+    }
+  }
+}

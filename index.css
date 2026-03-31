@@ -1,0 +1,60 @@
+:root {
+    color-scheme: light dark;
+    --app-header-height: 3.75rem;
+}
+
+html,
+body,
+#root {
+    min-height: 100%;
+}
+
+body {
+    margin: 0;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+button,
+input,
+select,
+textarea {
+    font: inherit;
+}
+
+img,
+svg,
+video,
+canvas {
+    display: block;
+    max-width: 100%;
+}
+
+table {
+    border-collapse: collapse;
+}
+
+.mobile-safe-bottom {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+.mobile-safe-top {
+    padding-top: env(safe-area-inset-top);
+}
+
+.glass-panel {
+    backdrop-filter: blur(18px);
+}
+
+.card-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+@media (max-width: 1023px) {
+    .card-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
