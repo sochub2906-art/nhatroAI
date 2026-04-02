@@ -1,19 +1,25 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, FileText, Home, LayoutGrid, List, Plus, QrCode, Search } from 'lucide-react';
+import { ArrowRight, FileText, Home, LayoutGrid, List, Plus, QrCode, Search, FileSpreadsheet, Trash2 } from 'lucide-react';
+import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
 import CCCDScannerModal from '../components/CCCDScannerModal';
 import QuickContractWizard from '../components/QuickContractWizardEnhanced';
+import BulkImportModal from '../components/BulkImportModal';
 import { useApp } from '../AppContext';
 import { applyCustomerQrData, createCustomerDraft, type CustomerDraft } from '../utils/customerIdentity';
 import { downloadResidenceDeclarationFile } from '../utils/residenceDeclaration';
 
 export default function Customers() {
-    const { customers, contracts, rooms, buildings, currentUser, addCustomer, updateCustomer } = useApp();
+    const { customers, contracts, rooms, buildings, currentUser, addCustomer, updateCustomer, deleteCustomer, terminateContract } = useApp();
     const [searchTerm, setSearchTerm] = useState('');
     const [isWizardOpen, setIsWizardOpen] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isScannerOpen, setIsScannerOpen] = useState(false);
+    const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
     const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [customerToDelete, setCustomerToDelete] = useState<any>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
     const [newCustomer, setNewCustomer] = useState<CustomerDraft>(createCustomerDraft());
 
     const filteredCustomers = customers.filter(customer => {
@@ -65,6 +71,39 @@ export default function Customers() {
         });
     };
 
+    const openDeleteModal = (customer: any) => {
+        setCustomerToDelete(customer);
+        setIsDeleteModalOpen(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!customerToDelete) return;
+        setIsDeleting(true);
+        try {
+            await deleteCustomer(customerToDelete.id);
+            setIsDeleteModalOpen(false);
+            setCustomerToDelete(null);
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
+    const handleTerminateAndConfirm = async () => {
+        if (!customerToDelete) return;
+        setIsDeleting(true);
+        try {
+            const activeContract = getActiveContract(customerToDelete.id);
+            if (activeContract) {
+                await terminateContract(activeContract.id);
+            }
+            await deleteCustomer(customerToDelete.id);
+            setIsDeleteModalOpen(false);
+            setCustomerToDelete(null);
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
     const renderRoomPill = (customerId: string) => {
         const room = getActiveRoom(customerId);
         if (!room) return <span className="text-xs italic text-slate-400">Chưa có phòng</span>;
@@ -103,6 +142,15 @@ export default function Customers() {
 
                     <button
                         type="button"
+                        onClick={() => setIsBulkImportOpen(true)}
+                        className="rounded-2xl border border-blue-200 bg-white px-4 py-3 text-sm font-medium text-blue-700 hover:bg-blue-50 dark:border-blue-800 dark:bg-slate-900 dark:text-blue-400 dark:hover:bg-slate-800 flex items-center gap-2"
+                    >
+                        <FileSpreadsheet className="h-4 w-4" />
+                        Nhập từ Excel
+                    </button>
+
+                    <button
+                        type="button"
                         onClick={() => setIsWizardOpen(true)}
                         className="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-medium text-blue-700 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-300"
                     >
@@ -121,6 +169,23 @@ export default function Customers() {
                         Thêm khách
                     </button>
                 </div>
+            </div>
+
+            <BulkImportModal 
+                type="customers"
+                isOpen={isBulkImportOpen}
+                onClose={() => setIsBulkImportOpen(false)}
+            />
+
+            {/* Mobile view toggle */}
+            <div className="flex items-center gap-2 lg:hidden">
+                <button type="button" onClick={() => setViewMode('card')} className={`inline-flex h-10 w-10 items-center justify-center rounded-xl transition ${viewMode === 'card' ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`} title="Dạng card">
+                    <LayoutGrid className="h-5 w-5" />
+                </button>
+                <button type="button" onClick={() => setViewMode('list')} className={`inline-flex h-10 w-10 items-center justify-center rounded-xl transition ${viewMode === 'list' ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`} title="Dạng danh sách">
+                    <List className="h-5 w-5" />
+                </button>
+                <span className="text-xs text-slate-400 dark:text-slate-500">{filteredCustomers.length} khách thuê</span>
             </div>
 
             <div className="hidden overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:block">
@@ -154,9 +219,19 @@ export default function Customers() {
                                                 type="button"
                                                 onClick={() => handleExportDeclaration(customer.id)}
                                                 className="inline-flex items-center gap-1 text-sm font-medium text-violet-600 transition hover:text-violet-700 dark:text-violet-400"
+                                                title="Xuất tờ khai CT01"
                                             >
                                                 <FileText className="h-4 w-4" />
-                                                CT01 PDF
+                                                CT01
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => openDeleteModal(customer)}
+                                                className="inline-flex items-center gap-1 text-sm font-medium text-red-500 transition hover:text-red-700 dark:text-red-400"
+                                                title="Xóa khách"
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                                Xóa
                                             </button>
                                             <Link to={`/app/customers/${customer.id}`} className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400">
                                                 Chi tiết
@@ -169,17 +244,6 @@ export default function Customers() {
                         </tbody>
                     </table>
                 </div>
-            </div>
-
-            {/* Mobile view toggle */}
-            <div className="flex items-center gap-2 lg:hidden">
-                <button type="button" onClick={() => setViewMode('card')} className={`inline-flex h-10 w-10 items-center justify-center rounded-xl transition ${viewMode === 'card' ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`} title="Dạng card">
-                    <LayoutGrid className="h-5 w-5" />
-                </button>
-                <button type="button" onClick={() => setViewMode('list')} className={`inline-flex h-10 w-10 items-center justify-center rounded-xl transition ${viewMode === 'list' ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`} title="Dạng danh sách">
-                    <List className="h-5 w-5" />
-                </button>
-                <span className="text-xs text-slate-400 dark:text-slate-500">{filteredCustomers.length} khách thuê</span>
             </div>
 
             {/* Mobile Card View */}
@@ -203,14 +267,22 @@ export default function Customers() {
                             <button
                                 type="button"
                                 onClick={() => handleExportDeclaration(customer.id)}
-                                className="inline-flex flex-1 min-h-[48px] items-center justify-center gap-2 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm font-medium text-violet-700 dark:border-violet-800 dark:bg-violet-950/30 dark:text-violet-300"
+                                className="inline-flex flex-1 min-h-[48px] items-center justify-center gap-2 rounded-2xl border border-violet-200 bg-violet-50 px-2 py-2.5 text-xs font-medium text-violet-700 dark:border-violet-800 dark:bg-violet-950/30 dark:text-violet-300"
                             >
                                 <FileText className="h-4 w-4" />
-                                CT01 PDF
+                                CT01
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => openDeleteModal(customer)}
+                                className="inline-flex flex-1 min-h-[48px] items-center justify-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-2 py-2.5 text-xs font-medium text-red-600 dark:border-red-800 dark:bg-red-950/30 dark:text-red-400"
+                            >
+                                <Trash2 className="h-4 w-4" />
+                                Xóa
                             </button>
                             <Link
                                 to={`/app/customers/${customer.id}`}
-                                className="inline-flex flex-1 min-h-[48px] items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 dark:border-slate-700 dark:text-slate-200"
+                                className="inline-flex flex-1 min-h-[48px] items-center justify-center gap-2 rounded-2xl border border-slate-200 px-2 py-2.5 text-xs font-medium text-slate-700 dark:border-slate-700 dark:text-slate-200"
                             >
                                 Chi tiết
                             </Link>
@@ -297,6 +369,18 @@ export default function Customers() {
                     onDetect={rawValue => setNewCustomer(prev => applyCustomerQrData(prev, rawValue))}
                 />
             )}
+
+            <DeleteConfirmationModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={handleConfirmDelete}
+                onTerminateAndConfirm={handleTerminateAndConfirm}
+                title="Xóa khách thuê"
+                message="Bạn có chắc chắn muốn xóa khách hàng"
+                itemName={customerToDelete?.name || ''}
+                activeContractId={contracts.find(c => c.customerId === customerToDelete?.id && c.isActive)?.id}
+                isLoading={isDeleting}
+            />
         </div>
     );
 }

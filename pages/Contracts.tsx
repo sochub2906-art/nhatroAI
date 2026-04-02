@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CheckSquare, Edit, ExternalLink, LayoutGrid, List, Plus, PlusCircle, Square, Trash2, XCircle } from 'lucide-react';
+import { CheckSquare, Edit, ExternalLink, LayoutGrid, List, Plus, PlusCircle, Square, Trash2, XCircle, Printer } from 'lucide-react';
 import { formatCurrency, SERVICE_PRESETS, useApp } from '../AppContext';
 import { Contract, ContractService } from '../types';
 import { getRoomOccupancyCount } from '../utils/roomOccupancy';
+import { printContractDocument } from '../utils/contractTemplate';
 
 export default function Contracts() {
-    const { contracts, rooms, customers, createContract, updateContract, terminateContract } = useApp();
+    const { contracts, rooms, customers, buildings, currentUser, createContract, updateContract, terminateContract } = useApp();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
     const [customServiceName, setCustomServiceName] = useState('');
@@ -101,6 +102,25 @@ export default function Contracts() {
         setIsModalOpen(false);
     };
 
+    const handlePrintContract = (contract: Contract) => {
+        const customer = customers.find(c => c.id === contract.customerId);
+        const room = rooms.find(r => r.id === contract.roomId);
+        const building = room ? buildings.find(b => b.id === room.buildingId) : undefined;
+        
+        if (!customer || !room || !currentUser) {
+            alert('Lỗi: Thiếu thông tin khách hàng, phòng hoặc Host để in hợp đồng.');
+            return;
+        }
+
+        printContractDocument({
+            contract,
+            customer,
+            room,
+            building,
+            host: currentUser
+        });
+    };
+
     const getCustomerName = (customerId: string) => customers.find(customer => customer.id === customerId)?.name || customerId;
     const getRoomName = (roomId: string) => rooms.find(room => room.id === roomId)?.name || roomId;
 
@@ -162,12 +182,15 @@ export default function Contracts() {
                             )}
                         </div>
                         <div className="mt-4 flex gap-2">
+                            <button type="button" onClick={(e) => { e.stopPropagation(); handlePrintContract(contract); }} title="In" className="inline-flex min-h-[48px] items-center justify-center rounded-2xl border border-blue-200 px-4 py-3 text-sm font-medium text-blue-600 transition hover:bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/40">
+                                <Printer className="h-4 w-4" />
+                            </button>
                             <button type="button" onClick={() => handleOpenEdit(contract)} className="flex-1 min-h-[48px] rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
                                 Chỉnh sửa
                             </button>
                             {contract.isActive && (
                                 <button type="button" onClick={() => terminateContract(contract.id)} className="inline-flex min-h-[48px] items-center justify-center rounded-2xl border border-rose-200 px-5 py-3 text-sm font-medium text-rose-600 transition hover:bg-rose-50 dark:border-rose-900/30 dark:text-rose-300 dark:hover:bg-rose-950/20">
-                                    <XCircle className="mr-1.5 h-4 w-4" /> Kết thúc
+                                    <XCircle className="mr-1.5 h-4 w-4" />
                                 </button>
                             )}
                         </div>
@@ -194,7 +217,7 @@ export default function Contracts() {
             {/* Desktop Table View */}
             <div className="hidden overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:block">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left">
+                    <table className="min-w-[1000px] w-full text-left">
                         <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-800/80 dark:text-slate-400">
                             <tr>
                                 <th className="px-5 py-4">Mã HĐ</th>
@@ -227,9 +250,9 @@ export default function Contracts() {
                                     <td className="px-5 py-4 font-medium text-blue-500">{formatCurrency(contract.price)}</td>
                                     <td className="px-5 py-4">
                                         {contract.extraServices && contract.extraServices.filter(service => service.enabled).length > 0 ? (
-                                            <div className="flex flex-wrap gap-1">
+                                            <div className="flex max-w-[200px] flex-wrap gap-1">
                                                 {contract.extraServices.filter(service => service.enabled).map(service => (
-                                                    <span key={service.id} className="rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
+                                                    <span key={service.id} className="inline-block whitespace-nowrap rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-medium text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
                                                         {service.name}
                                                     </span>
                                                 ))}
@@ -243,6 +266,9 @@ export default function Contracts() {
                                     </td>
                                     <td className="px-5 py-4">
                                         <div className="flex items-center justify-end gap-2">
+                                            <button type="button" onClick={(e) => { e.stopPropagation(); handlePrintContract(contract); }} title="In Hợp Đồng" className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-blue-200 text-blue-600 transition hover:bg-blue-50 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-900/40">
+                                                <Printer className="h-4 w-4" />
+                                            </button>
                                             <button type="button" onClick={() => handleOpenEdit(contract)} title="Sửa" className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
                                                 <Edit className="h-4 w-4" />
                                             </button>

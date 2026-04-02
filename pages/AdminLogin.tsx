@@ -2,17 +2,19 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../AppContext';
 import { UserRole } from '../types';
-import { Shield, ShoppingBag, ChevronRight, KeyRound, ArrowLeft, CheckCircle, Mail } from 'lucide-react';
+import { Shield, ShoppingBag, ChevronRight, KeyRound, ArrowLeft, CheckCircle, Mail, UserCog, Calculator } from 'lucide-react';
 import { auth } from '../firebase';
 import { sendPasswordResetEmail } from 'firebase/auth';
 
 const adminRoles: { role: UserRole; label: string; desc: string; icon: any; color: string; gradient: string }[] = [
   { role: 'SUPER_ADMIN', label: 'Super Admin', desc: 'Quản trị toàn bộ hệ thống', icon: Shield, color: 'text-red-400', gradient: 'from-red-500/20 to-orange-500/20 border-red-500/30' },
+  { role: 'ADMIN_L2', label: 'Admin cấp 2', desc: 'Quản trị viên hỗ trợ, quyền hạn giới hạn', icon: UserCog, color: 'text-sky-400', gradient: 'from-sky-500/20 to-blue-500/20 border-sky-500/30' },
   { role: 'SALES', label: 'Nhân viên Sales', desc: 'Quản lý Host & Lead bán hàng', icon: ShoppingBag, color: 'text-amber-400', gradient: 'from-amber-500/20 to-yellow-500/20 border-amber-500/30' },
+  { role: 'ACCOUNTANT', label: 'Kế toán', desc: 'Theo dõi doanh thu và thanh toán', icon: Calculator, color: 'text-violet-400', gradient: 'from-violet-500/20 to-purple-500/20 border-violet-500/30' },
 ];
 
 export default function AdminLoginPage() {
-  const { switchRole } = useApp();
+  const { login, logout } = useApp();
   const navigate = useNavigate();
   const [selected, setSelected] = useState<UserRole | null>(null);
   const [email, setEmail] = useState('');
@@ -21,14 +23,33 @@ export default function AdminLoginPage() {
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotSent, setForgotSent] = useState(false);
   const [forgotError, setForgotError] = useState('');
+  const [error, setError] = useState('');
 
-  const handleLogin = () => {
-    if (!selected) return;
-    switchRole(selected);
-    switch (selected) {
-      case 'SUPER_ADMIN': navigate('/admin/dashboard'); break;
-      case 'SALES': navigate('/sales/dashboard'); break;
-      default: navigate('/admin/dashboard'); break;
+  const handleLogin = async () => {
+    if (!selected || !email || !password) {
+      setError('Vui lòng nhập email, mật khẩu và chọn vai trò.');
+      return;
+    }
+    
+    setError('');
+    const user = await login(email, password);
+    
+    if (user) {
+      const adminishRoles: UserRole[] = ['SUPER_ADMIN', 'ADMIN_L2', 'SALES', 'ACCOUNTANT'];
+      if (user.role === selected || (adminishRoles.includes(user.role) && user.role === selected)) {
+        switch (selected) {
+          case 'SUPER_ADMIN':
+          case 'ADMIN_L2': navigate('/admin/dashboard'); break;
+          case 'SALES': navigate('/sales/dashboard'); break;
+          case 'ACCOUNTANT': navigate('/admin/dashboard'); break;
+          default: navigate('/admin/dashboard'); break;
+        }
+      } else {
+        setError('Tài khoản của bạn không có quyền truy cập vai trò này.');
+        logout();
+      }
+    } else {
+      setError('Thông tin đăng nhập không chính xác.');
     }
   };
 
@@ -93,6 +114,11 @@ export default function AdminLoginPage() {
         </div>
 
         <div className="space-y-3 mb-6 bg-slate-900/50 border border-slate-800 rounded-2xl p-5">
+          {error && (
+            <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm mb-2 text-center">
+              {error}
+            </div>
+          )}
           <div>
             <label className="block text-xs text-slate-500 mb-1 font-medium">Email</label>
             <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="admin@smartrental.vn"

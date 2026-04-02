@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useApp } from '../AppContext';
-import { Settings, Mail, Save, CheckCircle, Users, Plus, X, Send, FileText, Database, Download, Upload, Loader2, AlertTriangle } from 'lucide-react';
+import { Settings, Mail, Save, CheckCircle, Users, Plus, X, Send, FileText, Database, Download, Upload, Loader2, AlertTriangle, Image, Building2 } from 'lucide-react';
 import { buildSystemBackup } from '../services/systemBackupService';
 import AdminSubscriptionControlPanel from '../components/AdminSubscriptionControlPanel';
 
 export default function AdminSettingsPage() {
-    const { adminSettings, updateAdminSettings, importData, allUsers, pricingTiers, leads, proposals, hostPayments, crmNotes } = useApp();
+    const { adminSettings, updateAdminSettings, importData, allUsers, pricingTiers, leads, proposals, hostPayments, crmNotes, updateUser, formatCurrency } = useApp();
     const [form, setForm] = useState(adminSettings);
     const [newEmail, setNewEmail] = useState('');
     const [showSuccess, setShowSuccess] = useState(false);
-    const [activeTab, setActiveTab] = useState<'email' | 'templates' | 'payment' | 'subscription' | 'data'>('email');
+    const [activeTab, setActiveTab] = useState<'brand' | 'email' | 'templates' | 'payment' | 'subscription' | 'data' | 'zns'>('brand');
     const [isExportingBackup, setIsExportingBackup] = useState(false);
     const [backupNotice, setBackupNotice] = useState('');
 
@@ -28,6 +28,19 @@ export default function AdminSettingsPage() {
         setShowSuccess(true);
         setTimeout(() => setShowSuccess(false), 3000);
     };
+
+    // Favicon dynamic update
+    useEffect(() => {
+        if (form.faviconUrl) {
+            let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
+            if (!link) {
+                link = document.createElement('link');
+                link.rel = 'icon';
+                document.head.appendChild(link);
+            }
+            link.href = form.faviconUrl;
+        }
+    }, [form.faviconUrl]);
 
     const handleExport = async () => {
         setIsExportingBackup(true);
@@ -110,14 +123,107 @@ export default function AdminSettingsPage() {
 
             {/* Tabs */}
             <div className="flex gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl w-fit overflow-x-auto">
+                <button onClick={() => setActiveTab('brand')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === 'brand' ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-500'}`}><Image size={16} /> Thương hiệu</button>
                 <button onClick={() => setActiveTab('email')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === 'email' ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-500'}`}><Mail size={16} /> Cấu hình Email</button>
                 <button onClick={() => setActiveTab('templates')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === 'templates' ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-500'}`}><FileText size={16} /> Mẫu Email</button>
                 <button onClick={() => setActiveTab('payment')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === 'payment' ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-500'}`}><Settings size={16} /> Thanh toán hệ thống</button>
                 <button onClick={() => setActiveTab('subscription')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === 'subscription' ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-500'}`}><CheckCircle size={16} /> Subscription</button>
+                <button onClick={() => setActiveTab('zns')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === 'zns' ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-500'}`}><Send size={16} /> Dịch vụ ZNS</button>
                 <button onClick={() => setActiveTab('data')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === 'data' ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-500'}`}><Database size={16} /> Dữ liệu</button>
             </div>
 
             <form onSubmit={handleSave} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+
+                {activeTab === 'brand' && (
+                    <div className="p-6 space-y-6">
+                        <div>
+                            <h3 className="font-bold text-sm mb-4 flex items-center gap-2 text-slate-700 dark:text-slate-300"><Image size={16} className="text-blue-500" /> Logo & Favicon</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm text-slate-500 mb-1">URL Logo (header, landing page)</label>
+                                    <input type="url" placeholder="https://example.com/logo.png" className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-blue-500"
+                                        value={form.logoUrl || ''}
+                                        onChange={e => setForm({ ...form, logoUrl: e.target.value })} />
+                                    <p className="text-xs text-slate-400 mt-1">Ảnh PNG nền trong suốt, chiều cao ~40-60px.</p>
+                                    {form.logoUrl && (
+                                        <div className="mt-3 p-3 rounded-xl bg-slate-950 border border-slate-700 flex items-center justify-center">
+                                            <img src={form.logoUrl} alt="Logo preview" className="max-h-12 max-w-[200px] object-contain" />
+                                        </div>
+                                    )}
+                                </div>
+                                <div>
+                                    <label className="block text-sm text-slate-500 mb-1">URL Favicon (icon tab trình duyệt)</label>
+                                    <input type="url" placeholder="https://example.com/favicon.ico" className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-blue-500"
+                                        value={form.faviconUrl || ''}
+                                        onChange={e => setForm({ ...form, faviconUrl: e.target.value })} />
+                                    <p className="text-xs text-slate-400 mt-1">Ảnh vuông 32x32 hoặc 64x64 (.ico, .png, .svg).</p>
+                                    {form.faviconUrl && (
+                                        <div className="mt-3 flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                                            <img src={form.faviconUrl} alt="Favicon" className="h-8 w-8 object-contain" />
+                                            <span className="text-xs text-slate-500">Favicon preview</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+                            <h3 className="font-bold text-sm mb-4 flex items-center gap-2 text-slate-700 dark:text-slate-300">🖼️ Hình nền Landing Page</h3>
+                            <div>
+                                <label className="block text-sm text-slate-500 mb-1">URL ảnh nền</label>
+                                <input type="url" placeholder="https://images.unsplash.com/..." className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-indigo-500"
+                                    value={form.landingBackgroundUrl || ''}
+                                    onChange={e => setForm({ ...form, landingBackgroundUrl: e.target.value })} />
+                                <p className="text-xs text-slate-400 mt-1">Để trống dùng ảnh mặc định. Nên dùng ảnh ngang 1920px+.</p>
+                            </div>
+                            {form.landingBackgroundUrl && (
+                                <div className="mt-3 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 h-32 bg-gray-950">
+                                    <img src={form.landingBackgroundUrl} alt="Preview" className="w-full h-full object-cover opacity-30 blur-sm" />
+                                </div>
+                            )}
+                        </div>
+                        <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+                            <h3 className="font-bold text-sm mb-4 flex items-center gap-2 text-slate-700 dark:text-slate-300"><Building2 size={16} className="text-emerald-500" /> Thông tin công ty (Footer)</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm text-slate-500 mb-1">Tên thương hiệu</label>
+                                    <input type="text" className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-blue-500"
+                                        value={form.companyInfo?.name || ''}
+                                        onChange={e => setForm({ ...form, companyInfo: { ...form.companyInfo, name: e.target.value } })} placeholder="Smart Rental" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm text-slate-500 mb-1">Email liên hệ</label>
+                                    <input type="email" className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-blue-500"
+                                        value={form.companyInfo?.email || ''}
+                                        onChange={e => setForm({ ...form, companyInfo: { ...form.companyInfo, email: e.target.value } })} placeholder="support@smartrental.ai" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm text-slate-500 mb-1">Số điện thoại</label>
+                                    <input type="tel" className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-blue-500"
+                                        value={form.companyInfo?.phone || ''}
+                                        onChange={e => setForm({ ...form, companyInfo: { ...form.companyInfo, phone: e.target.value } })} placeholder="1800 000 000" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm text-slate-500 mb-1">Facebook URL</label>
+                                    <input type="url" className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-blue-500"
+                                        value={form.companyInfo?.facebookUrl || ''}
+                                        onChange={e => setForm({ ...form, companyInfo: { ...form.companyInfo, facebookUrl: e.target.value } })} placeholder="https://facebook.com/smartrental" />
+                                </div>
+                            </div>
+                            <div className="mt-4">
+                                <label className="block text-sm text-slate-500 mb-1">Địa chỉ</label>
+                                <input type="text" className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-blue-500"
+                                    value={form.companyInfo?.address || ''}
+                                    onChange={e => setForm({ ...form, companyInfo: { ...form.companyInfo, address: e.target.value } })} placeholder="Số 1, Đường công nghệ, Quận Nam Từ Liêm, Hà Nội" />
+                            </div>
+                            <div className="mt-4">
+                                <label className="block text-sm text-slate-500 mb-1">Mô tả ngắn</label>
+                                <textarea className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-blue-500 resize-none h-20"
+                                    value={form.companyInfo?.description || ''}
+                                    onChange={e => setForm({ ...form, companyInfo: { ...form.companyInfo, description: e.target.value } })} placeholder="Nền tảng quản lý nhà trọ thông minh số 1 Việt Nam..." />
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {activeTab === 'email' && (
                     <div className="p-6 space-y-6">
@@ -264,23 +370,155 @@ export default function AdminSettingsPage() {
                             </div>
                         </div>
 
-                        {/* Landing Page Background Image */}
-                        <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
-                            <h3 className="font-bold text-sm mb-4 flex items-center gap-2 text-slate-700 dark:text-slate-300">🖼️ Hình nền Landing Page</h3>
-                            <p className="text-sm text-slate-500 mb-4">Cấu hình hình nền mờ phía sau cho trang chủ giới thiệu sản phẩm (business, estate, apartment,...).</p>
-                            <div>
-                                <label className="block text-sm text-slate-500 mb-1">URL ảnh nền</label>
-                                <input type="url" placeholder="https://images.unsplash.com/..." className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-indigo-500"
-                                    value={form.landingBackgroundUrl || ''}
-                                    onChange={e => setForm({ ...form, landingBackgroundUrl: e.target.value })} />
-                                <p className="text-xs text-slate-400 mt-1">Để trống sẽ dùng ảnh mặc định. Nên dùng ảnh ngang (landscape), kích thước lớn (1920px+).</p>
-                            </div>
-                            {form.landingBackgroundUrl && (
-                                <div className="mt-3 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 h-32 bg-gray-950">
-                                    <img src={form.landingBackgroundUrl} alt="Preview" className="w-full h-full object-cover opacity-30 blur-sm" />
+
+                        {/* SePay Webhook config */}
+                        <div className="pt-6 border-t border-slate-100 dark:border-slate-800">
+                            <h3 className="font-bold text-sm mb-4 flex items-center gap-2 text-slate-700 dark:text-slate-300">🔗 Tích hợp SePay Webhook</h3>
+                            <div className="mb-4">
+                                <label className="block text-sm text-slate-500 mb-1">Webhook URL tự gạch nợ cho Admin (nhận phí duy trì)</label>
+                                <div className="flex gap-2">
+                                    <input type="text" readOnly value={`${import.meta.env.VITE_SUPABASE_URL || 'https://[SUPABASE].supabase.co'}/functions/v1/sepay-webhook?type=admin`} className="flex-1 p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm outline-none font-mono text-slate-600 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300" />
                                 </div>
-                            )}
+                                <p className="text-xs text-slate-400 mt-1">Copy link này dán vào cấu hình Webhook trên trang quản trị SePay của Admin.</p>
+                            </div>
+
+                            <h4 className="font-semibold text-sm mb-3 mt-6">Duyệt yêu cầu dùng SePay tự động của Host</h4>
+                            <div className="space-y-3">
+                                {hostUsers.filter(h => h.sepayStatus === 'pending' || h.sepayStatus === 'active').length === 0 && (
+                                    <div className="text-sm text-slate-500 p-4 border border-dashed rounded-xl dark:border-slate-700 text-center">Chưa có Host nào đăng ký SePay Automation.</div>
+                                )}
+                                {hostUsers.filter(h => h.sepayStatus === 'pending' || h.sepayStatus === 'active').map(host => (
+                                    <div key={host.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl">
+                                        <div>
+                                            <p className="font-medium text-slate-900 dark:text-white">{host.name} <span className="text-sm font-normal text-slate-500">({host.email})</span></p>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <span className="text-xs text-slate-500">Trạng thái SePay:</span>
+                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${host.sepayStatus === 'pending' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400'}`}>
+                                                    {host.sepayStatus === 'pending' ? 'Chờ duyệt' : 'Đang hoạt động'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-2 text-xs">
+                                            {host.sepayStatus === 'pending' ? (
+                                                <>
+                                                    <button type="button" onClick={async () => { await updateUser({ ...host, sepayStatus: 'active', sepayWebhookToken: crypto.randomUUID() }); window.dispatchEvent(new Event('usersDataChanged')); }} className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium shadow-sm transition-colors">Duyệt mở SePay</button>
+                                                    <button type="button" onClick={async () => { await updateUser({ ...host, sepayStatus: 'rejected' }); window.dispatchEvent(new Event('usersDataChanged')); }} className="px-3 py-1.5 bg-rose-100 hover:bg-rose-200 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300 rounded-lg font-medium transition-colors">Từ chối</button>
+                                                </>
+                                            ) : (
+                                                <button type="button" onClick={async () => { await updateUser({ ...host, sepayStatus: 'unregistered' }); window.dispatchEvent(new Event('usersDataChanged')); }} className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 dark:bg-slate-700 dark:text-slate-200 rounded-lg font-medium transition-colors">Hủy kích hoạt</button>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
+                    </div>
+                )}
+
+                {activeTab === 'zns' && (
+                    <div className="p-6 space-y-6">
+                        <div>
+                            <h3 className="font-bold text-sm mb-4 flex items-center gap-2 text-slate-700 dark:text-slate-300"><Send size={16} className="text-violet-500" /> Cấu hình dịch vụ Zalo ZNS</h3>
+                            <div className="space-y-4">
+                                <label className="flex items-center gap-3">
+                                    <input
+                                        type="checkbox"
+                                        checked={form.zaloZnsConfig?.enabled || false}
+                                        onChange={(e) => setForm({
+                                            ...form,
+                                            zaloZnsConfig: { ...form.zaloZnsConfig, enabled: e.target.checked, pricePerMonth: form.zaloZnsConfig?.pricePerMonth || 0, description: form.zaloZnsConfig?.description || '' }
+                                        })}
+                                        className="h-5 w-5 rounded border-slate-300 dark:border-slate-600 text-violet-600 focus:ring-violet-600"
+                                    />
+                                    <span className="font-medium text-slate-700 dark:text-slate-300">Bật dịch vụ Zalo ZNS (cho phép Host đăng ký)</span>
+                                </label>
+                                
+                                {form.zaloZnsConfig?.enabled && (
+                                    <div className="grid gap-4 md:grid-cols-2 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Giá mỗi tháng (VNĐ)</label>
+                                            <input
+                                                type="number"
+                                                value={form.zaloZnsConfig.pricePerMonth}
+                                                onChange={(e) => setForm({...form, zaloZnsConfig: {...form.zaloZnsConfig!, pricePerMonth: Number(e.target.value)}})}
+                                                className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none focus:ring-2 focus:ring-violet-500"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Mô tả hiển thị cho Host</label>
+                                            <input
+                                                type="text"
+                                                value={form.zaloZnsConfig.description}
+                                                onChange={(e) => setForm({...form, zaloZnsConfig: {...form.zaloZnsConfig!, description: e.target.value}})}
+                                                placeholder="VD: Gửi thông báo nợ cước, nhắc đóng tiền tự động"
+                                                className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none focus:ring-2 focus:ring-violet-500"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {form.zaloZnsConfig?.enabled && (
+                            <div className="pt-6 border-t border-slate-200 dark:border-slate-800">
+                                <h3 className="font-bold text-sm mb-4 flex items-center gap-2 text-slate-700 dark:text-slate-300"><Users size={16} className="text-violet-500" /> Quản lý duyệt hệ thống Zalo ZNS</h3>
+                                <div className="space-y-3">
+                                    {hostUsers.filter(h => h.zaloZnsStatus === 'pending' || h.zaloZnsStatus === 'active').length === 0 && (
+                                        <div className="text-sm text-slate-500 p-4 border border-dashed rounded-xl dark:border-slate-700 text-center">Chưa có Host nào đăng ký Zalo ZNS.</div>
+                                    )}
+                                    {hostUsers.filter(h => h.zaloZnsStatus === 'pending' || h.zaloZnsStatus === 'active').map(host => (
+                                        <div key={host.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl">
+                                            <div>
+                                                <p className="font-medium text-slate-900 dark:text-white">{host.name} <span className="text-sm font-normal text-slate-500">({host.email})</span></p>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <span className="text-xs text-slate-500">Trạng thái ZNS:</span>
+                                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${host.zaloZnsStatus === 'pending' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400'}`}>
+                                                        {host.zaloZnsStatus === 'pending' ? 'Chờ duyệt' : 'Đang hoạt động'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                {host.zaloZnsStatus === 'pending' ? (
+                                                    <>
+                                                        <button
+                                                            type="button"
+                                                            onClick={async () => {
+                                                                await updateUser({ ...host, zaloZnsStatus: 'active' });
+                                                                window.dispatchEvent(new Event('usersDataChanged'));
+                                                            }}
+                                                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm rounded-lg text-sm font-medium transition-colors"
+                                                        >
+                                                            Kích hoạt
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={async () => {
+                                                                await updateUser({ ...host, zaloZnsStatus: 'rejected' });
+                                                                window.dispatchEvent(new Event('usersDataChanged'));
+                                                            }}
+                                                            className="px-3 py-1.5 bg-rose-100 hover:bg-rose-200 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300 rounded-lg text-sm font-medium transition-colors"
+                                                        >
+                                                            Từ chối
+                                                        </button>
+                                                    </>
+                                                ) : (
+                                                    <button
+                                                        type="button"
+                                                        onClick={async () => {
+                                                            await updateUser({ ...host, zaloZnsStatus: 'unregistered' });
+                                                            window.dispatchEvent(new Event('usersDataChanged'));
+                                                        }}
+                                                        className="px-3 py-1.5 bg-slate-200 text-slate-700 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-200 rounded-lg text-sm font-medium transition-colors"
+                                                    >
+                                                        Hủy kích hoạt
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 

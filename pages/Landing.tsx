@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, BarChart3, CheckCircle, ChevronRight, Menu, Smartphone, X, Zap } from 'lucide-react';
 import { useApp } from '../AppContext';
+import LandingFooter from '../components/LandingFooter';
 
 const DEFAULT_BG = 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=1920&q=80';
 
@@ -37,6 +38,21 @@ export default function Landing() {
   const [formData, setFormData] = useState({ name: '', phone: '', needs: '' });
   const [submitted, setSubmitted] = useState(false);
   const bgUrl = adminSettings?.landingBackgroundUrl || DEFAULT_BG;
+  const logoUrl = adminSettings?.logoUrl;
+  const brandName = adminSettings?.companyInfo?.name || 'Smart Rental';
+
+  // Dynamic favicon
+  useEffect(() => {
+    if (adminSettings?.faviconUrl) {
+      let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        document.head.appendChild(link);
+      }
+      link.href = adminSettings.faviconUrl;
+    }
+  }, [adminSettings?.faviconUrl]);
 
   const openHostLogin = () => {
     setShowMobileMenu(false);
@@ -158,9 +174,15 @@ export default function Landing() {
             <button
               type="button"
               onClick={() => navigate('/')}
-              className="text-left text-3xl font-black tracking-tight text-transparent bg-gradient-to-r from-blue-400 via-cyan-300 to-indigo-300 bg-clip-text"
+              className="text-left"
             >
-              Smart Rental
+              {logoUrl ? (
+                <img src={logoUrl} alt={brandName} className="h-10 max-w-[180px] object-contain" />
+              ) : (
+                <span className="text-3xl font-black tracking-tight text-transparent bg-gradient-to-r from-blue-400 via-cyan-300 to-indigo-300 bg-clip-text">
+                  {brandName}
+                </span>
+              )}
             </button>
 
             <div className="hidden items-center gap-8 lg:flex">
@@ -403,9 +425,7 @@ export default function Landing() {
         </div>
       </section>
 
-      <footer className="border-t border-white/10 px-5 py-8 text-center text-sm text-slate-500 lg:px-8">
-        © 2024 Smart Rental Manager. All rights reserved.
-      </footer>
+      <LandingFooter />
     </div>
   );
 }

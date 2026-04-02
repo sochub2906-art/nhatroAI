@@ -276,18 +276,25 @@ export default function RoomMap({ buildingId }: RoomMapProps) {
             )}
 
             <div className="space-y-8 pb-10">
-                {floors.map(floor => (
+                {floors.map(floor => {
+                    const floorRooms = filteredRooms.filter(room => room.floor === floor);
+                    const columns = floorRooms.length <= 3 ? floorRooms.length : Math.min(5, Math.max(2, Math.ceil(Math.sqrt(floorRooms.length * 1.35))));
+                    const rows = Math.ceil(floorRooms.length / columns) || 1;
+                    const baseMinHeight = Math.max(320, rows * 130);
+
+                    return (
                     <div key={floor} className="space-y-2">
                         <h3 className="border-b border-gray-200 pb-2 font-bold text-gray-500 dark:border-gray-800 dark:text-gray-400">Tầng {floor}</h3>
                         <div
                             ref={element => { containerRefs.current[floor] = element; }}
-                            className="relative h-[250px] w-full overflow-hidden rounded-xl border-2 border-dashed border-gray-300 bg-white touch-none transition-colors dark:border-gray-700 dark:bg-gray-900/50 sm:h-[320px]"
+                            className="relative w-full overflow-hidden rounded-xl border-2 border-dashed border-gray-300 bg-white touch-none transition-[height] duration-300 dark:border-gray-700 dark:bg-gray-900/50"
                             style={{
                                 backgroundImage: `radial-gradient(${gridColor} 1px, transparent 1px)`,
                                 backgroundSize: '20px 20px',
+                                minHeight: `${baseMinHeight}px`,
                             }}
                         >
-                            {filteredRooms.filter(room => room.floor === floor).map(room => {
+                            {floorRooms.map(room => {
                                 const occupancySummary = getOccupancySummary(room.id);
                                 const buildingName = buildingById.get(room.buildingId)?.name;
                                 const position = localPositions[room.id] || room.position || autoLayout.get(room.id) || { x: 4, y: 6 };
@@ -339,7 +346,7 @@ export default function RoomMap({ buildingId }: RoomMapProps) {
                             })}
                         </div>
                     </div>
-                ))}
+                )})}
             </div>
 
             {floors.length === 0 && (

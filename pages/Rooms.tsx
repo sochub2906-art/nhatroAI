@@ -1,16 +1,68 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Building, Home, Plus, Trash2, Users } from 'lucide-react';
+import { ArrowRight, Building, Home, Plus, Trash2, Users, Edit } from 'lucide-react';
 import { formatCurrency, useApp } from '../AppContext';
 import { getRoomOccupants } from '../utils/roomOccupancy';
 import { buildRoomBills } from '../utils/paymentBills';
 import { formatDateLabel, getBillStatusTone, getContractExpiryState, getCurrentBillingPeriod } from '../utils/contractStatus';
+import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
 
 export default function Rooms() {
-    const { rooms, buildings, contracts, customers, payments, addRoom, deleteRoom, currentUser, pricingTiers } = useApp();
+    const { rooms, buildings, contracts, customers, payments, addRoom, updateRoom, deleteRoom, terminateContract, currentUser, pricingTiers } = useApp();
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [roomToDelete, setRoomToDelete] = useState<any>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
     const [filterBuildingId, setFilterBuildingId] = useState('');
     const [newRoom, setNewRoom] = useState({ id: '', name: '', price: 0, floor: 1, buildingId: '' });
+    const [editingRoom, setEditingRoom] = useState<any>(null);
+
+    const openEditModal = (room: any) => {
+        setEditingRoom(room);
+        setIsEditModalOpen(true);
+    };
+
+    const handleEdit = (event: React.FormEvent) => {
+        event.preventDefault();
+        if (!editingRoom || !editingRoom.id || !editingRoom.name || !editingRoom.buildingId) return;
+        updateRoom(editingRoom);
+        setIsEditModalOpen(false);
+        setEditingRoom(null);
+    };
+
+    const openDeleteModal = (room: any) => {
+        setRoomToDelete(room);
+        setIsDeleteModalOpen(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!roomToDelete) return;
+        setIsDeleting(true);
+        try {
+            await deleteRoom(roomToDelete.id);
+            setIsDeleteModalOpen(false);
+            setRoomToDelete(null);
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
+    const handleTerminateAndConfirm = async () => {
+        if (!roomToDelete) return;
+        setIsDeleting(true);
+        try {
+            const activeContracts = contracts.filter(c => c.roomId === roomToDelete.id && c.isActive);
+            for (const contract of activeContracts) {
+                await terminateContract(contract.id);
+            }
+            await deleteRoom(roomToDelete.id);
+            setIsDeleteModalOpen(false);
+            setRoomToDelete(null);
+        } finally {
+            setIsDeleting(false);
+        }
+    };
 
     const handleAdd = (event: React.FormEvent) => {
         event.preventDefault();
@@ -191,16 +243,22 @@ export default function Rooms() {
                                     <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{formatCurrency(room.price)}</p>
                                 </div>
                                 <div className="flex gap-2">
-                                    {room.status === 'Trống' && (
-                                        <button
-                                            type="button"
-                                            onClick={event => { event.preventDefault(); deleteRoom(room.id); }}
-                                            className="z-10 rounded-lg p-2 text-gray-400 transition hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10"
-                                            title="Xóa phòng"
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </button>
-                                    )}
+                                    <button
+                                        type="button"
+                                        onClick={event => { event.preventDefault(); openEditModal(room); }}
+                                        className="z-10 rounded-lg p-2 text-gray-400 transition hover:bg-blue-50 hover:text-blue-500 dark:hover:bg-blue-500/10"
+                                        title="Sửa phòng"
+                                    >
+                                        <Edit className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={event => { event.preventDefault(); openDeleteModal(room); }}
+                                        className="z-10 rounded-lg p-2 text-gray-400 transition hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10"
+                                        title="Xóa phòng"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </button>
                                     <Link to={`/app/rooms/${room.id}`} className="z-10 flex items-center gap-1 rounded-lg bg-blue-50 p-2 text-sm font-medium text-blue-600 transition hover:bg-blue-100 hover:text-blue-700 dark:bg-blue-600/10 dark:text-blue-500 dark:hover:bg-blue-600 dark:hover:text-white">
                                         Chi tiết <ArrowRight className="h-4 w-4" />
                                     </Link>
@@ -337,6 +395,105 @@ export default function Rooms() {
                     </div>
                 </div>
             )}
+
+            {isEditModalOpen && editingRoom && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+                    <div className="w-full max-w-md rounded-xl border border-gray-200 bg-white p-6 shadow-2xl dark:border-gray-800 dark:bg-gray-900">
+                        <h3 className="mb-4 text-xl font-bold text-gray-900 dark:text-white">Chỉnh sửa phòng</h3>
+                        <form onSubmit={handleEdit} className="space-y-4">
+                            <div>
+                                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Tòa nhà</label>
+                                <select
+                                    required
+                                    className="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-gray-900 outline-none transition px-3 py-2 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                                    value={editingRoom.buildingId}
+                                    onChange={event => setEditingRoom({ ...editingRoom, buildingId: event.target.value })}
+                                >
+                                    {buildings.map(building => (
+                                        <option key={building.id} value={building.id}>{building.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Mã phòng</label>
+                                    <input
+                                        required
+                                        disabled
+                                        type="text"
+                                        className="w-full rounded-lg border border-gray-300 bg-gray-100 p-2.5 text-gray-500 outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 cursor-not-allowed"
+                                        value={editingRoom.id}
+                                    />
+                                    <span className="text-[10px] text-gray-500">Mã (ID) không thể đổi.</span>
+                                </div>
+                                <div>
+                                    <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Tên phòng</label>
+                                    <input
+                                        required
+                                        type="text"
+                                        className="w-full rounded-lg border border-gray-300 bg-white p-2.5 text-gray-900 outline-none transition focus:border-transparent focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                                        value={editingRoom.name}
+                                        onChange={event => setEditingRoom({ ...editingRoom, name: event.target.value })}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Tầng</label>
+                                    <input
+                                        required
+                                        type="number"
+                                        min="1"
+                                        className="w-full rounded-lg border border-gray-300 bg-white p-2.5 text-gray-900 outline-none transition focus:border-transparent focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                                        value={editingRoom.floor}
+                                        onChange={event => setEditingRoom({ ...editingRoom, floor: Number(event.target.value) })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Giá phòng (VNĐ)</label>
+                                    <input
+                                        required
+                                        type="number"
+                                        className="w-full rounded-lg border border-gray-300 bg-white p-2.5 text-gray-900 outline-none transition focus:border-transparent focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                                        value={editingRoom.price}
+                                        onChange={event => setEditingRoom({ ...editingRoom, price: Number(event.target.value) })}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="mt-6 flex gap-3 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsEditModalOpen(false)}
+                                    className="flex-1 rounded-lg bg-gray-100 px-4 py-2.5 font-medium text-gray-700 transition hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                                >
+                                    Hủy
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="flex-1 rounded-lg bg-blue-600 px-4 py-2.5 font-medium text-white shadow-lg shadow-blue-500/20 transition hover:bg-blue-700"
+                                >
+                                    Lưu thay đổi
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            <DeleteConfirmationModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={handleConfirmDelete}
+                onTerminateAndConfirm={handleTerminateAndConfirm}
+                title="Xóa phòng trọ"
+                message="Bạn có chắc chắn muốn xóa phòng"
+                itemName={roomToDelete?.name || ''}
+                activeContractId={contracts.find(c => c.roomId === roomToDelete?.id && c.isActive)?.id}
+                isLoading={isDeleting}
+            />
         </div>
     );
 }

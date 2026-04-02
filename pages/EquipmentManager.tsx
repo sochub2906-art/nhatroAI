@@ -1,9 +1,10 @@
 import React from 'react';
 import { formatCurrency, useApp } from '../AppContext';
 import type { Equipment, EquipmentMaintenanceType, EquipmentStatus } from '../types';
-import { Archive, Building2, CheckCircle2, ChevronDown, ChevronUp, Edit3, Home, Plus, Search, ShieldAlert, Trash2, Wrench } from 'lucide-react';
+import { Archive, Building2, CheckCircle2, ChevronDown, ChevronUp, Edit3, Home, LayoutGrid, List, Plus, Search, ShieldAlert, Trash2, Wrench, FileSpreadsheet } from 'lucide-react';
 import { getEquipmentBookValue, getEquipmentMaintenanceTotal, getEquipmentMonthlyDepreciation } from '../utils/hostAnalytics';
 import { composeEquipmentNotes, extractEquipmentCategory } from '../utils/equipmentCategory';
+import BulkImportModal from '../components/BulkImportModal';
 
 type EquipmentDraft = {
     name: string;
@@ -123,8 +124,10 @@ export default function EquipmentManager() {
     const [filterCategory, setFilterCategory] = React.useState('all');
     const [expandedCategories, setExpandedCategories] = React.useState<Record<string, boolean>>({});
     const [isModalOpen, setIsModalOpen] = React.useState(false);
+    const [isBulkImportOpen, setIsBulkImportOpen] = React.useState(false);
     const [editingId, setEditingId] = React.useState<string | null>(null);
     const [draft, setDraft] = React.useState<EquipmentDraft>(() => createEquipmentDraft());
+    const [viewMode, setViewMode] = React.useState<'card' | 'list'>('card');
 
     const buildingMap = React.useMemo(() => new Map(buildings.map(item => [item.id, item])), [buildings]);
     const roomMap = React.useMemo(() => new Map(rooms.map(item => [item.id, item])), [rooms]);
@@ -275,15 +278,32 @@ export default function EquipmentManager() {
                     </p>
                 </div>
 
-                <button
-                    type="button"
-                    onClick={openCreateModal}
-                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 text-sm font-medium text-white shadow-lg shadow-blue-600/20"
-                >
-                    <Plus className="h-4 w-4" />
-                    Thêm tài sản
-                </button>
+                <div className="flex gap-2">
+                    <button
+                        type="button"
+                        onClick={() => setIsBulkImportOpen(true)}
+                        className="rounded-2xl border border-blue-200 bg-white px-4 py-3 text-sm font-medium text-blue-700 hover:bg-blue-50 dark:border-blue-800 dark:bg-slate-900 dark:text-blue-400 dark:hover:bg-slate-800 flex items-center gap-2"
+                    >
+                        <FileSpreadsheet className="h-4 w-4" />
+                        Nhập từ Excel
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={openCreateModal}
+                        className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 text-sm font-medium text-white shadow-lg shadow-blue-600/20"
+                    >
+                        <Plus className="h-4 w-4" />
+                        Thêm tài sản
+                    </button>
+                </div>
             </div>
+
+            <BulkImportModal
+                type="equipment"
+                isOpen={isBulkImportOpen}
+                onClose={() => setIsBulkImportOpen(false)}
+            />
 
             <div className="rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
                 <div className="grid gap-3 xl:grid-cols-[1.05fr_repeat(4,minmax(0,0.55fr))]">
@@ -318,6 +338,15 @@ export default function EquipmentManager() {
                         {Object.keys(STATUS_META).map(status => <option key={status} value={status}>{status}</option>)}
                     </select>
                 </div>
+                <div className="mt-3 flex items-center gap-2 lg:hidden">
+                    <button type="button" onClick={() => setViewMode('card')} className={`inline-flex h-10 w-10 items-center justify-center rounded-xl transition ${viewMode === 'card' ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`} title="Dạng card">
+                        <LayoutGrid className="h-5 w-5" />
+                    </button>
+                    <button type="button" onClick={() => setViewMode('list')} className={`inline-flex h-10 w-10 items-center justify-center rounded-xl transition ${viewMode === 'list' ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`} title="Dạng danh sách">
+                        <List className="h-5 w-5" />
+                    </button>
+                    <span className="text-xs text-slate-400 dark:text-slate-500">{filteredEquipment.length} tài sản</span>
+                </div>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -330,7 +359,27 @@ export default function EquipmentManager() {
                 ))}
             </div>
 
-            <div className="space-y-4">
+            {/* Mobile List View */}
+            <div className={`space-y-2 lg:hidden ${viewMode !== 'list' ? 'hidden' : ''}`}>
+                {filteredEquipment.length === 0 && <div className="rounded-[1.75rem] border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-500 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">Chưa có tài sản nào khớp với bộ lọc hiện tại.</div>}
+                {filteredEquipment.map(({ item, category }) => {
+                    const room = item.roomId ? roomMap.get(item.roomId) : undefined;
+                    return (
+                        <div key={item.id} onClick={() => handleEdit(item)} className="flex cursor-pointer items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm transition hover:bg-slate-50 active:bg-slate-100 dark:border-slate-800 dark:bg-slate-900 dark:hover:bg-slate-800">
+                            <div className="min-w-0 flex-1">
+                                <div className="truncate font-semibold text-slate-900 dark:text-white">{item.name}</div>
+                                <div className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">{category} · {room?.name || 'Khu vực chung'} · GT: {formatCurrency(getEquipmentBookValue(item))}</div>
+                            </div>
+                            <div className="flex-shrink-0">
+                                {renderStatusBadge(item.status)}
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+
+            {/* Card View (default on desktop, toggle on mobile) */}
+            <div className={`space-y-4 ${viewMode === 'list' ? 'hidden lg:block' : ''}`}>
                 {Object.keys(groupedEquipment).length === 0 && (
                     <div className="rounded-[1.75rem] border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-500 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
                         Chưa có tài sản nào khớp với bộ lọc hiện tại.

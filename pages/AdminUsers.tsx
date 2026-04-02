@@ -8,14 +8,18 @@ import type { AppUser, UserRole } from '../types';
 
 const ROLE_LABELS: Record<UserRole, string> = {
     SUPER_ADMIN: 'Super Admin',
+    ADMIN_L2: 'Admin cấp 2',
     SALES: 'Nhân viên Sales',
+    ACCOUNTANT: 'Kế toán',
     HOST: 'Chủ nhà (Host)',
     TENANT: 'Người thuê',
 };
 
 const ROLE_COLORS: Record<UserRole, string> = {
     SUPER_ADMIN: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+    ADMIN_L2: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400',
     SALES: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+    ACCOUNTANT: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400',
     HOST: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
     TENANT: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
 };
@@ -257,7 +261,7 @@ export default function AdminUsers() {
                     />
                 </div>
                 <div className="flex gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl w-fit">
-                    {(['ALL', 'SUPER_ADMIN', 'SALES', 'HOST', 'TENANT'] as const).map(role => (
+                    {(['ALL', 'SUPER_ADMIN', 'ADMIN_L2', 'SALES', 'ACCOUNTANT', 'HOST', 'TENANT'] as const).map(role => (
                         <button
                             key={role}
                             onClick={() => setFilterRole(role)}
@@ -402,7 +406,9 @@ export default function AdminUsers() {
                                 <div>
                                     <label className="block text-sm font-medium mb-1">Vai trò</label>
                                     <select className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 outline-none" value={form.role} onChange={e => setForm({ ...form, role: e.target.value as UserRole })}>
+                                        <option value="ADMIN_L2">Admin cấp 2</option>
                                         <option value="SALES">Nhân viên Sales</option>
+                                        <option value="ACCOUNTANT">Kế toán</option>
                                         <option value="HOST">Chủ nhà (Host)</option>
                                         <option value="TENANT">Người thuê</option>
                                     </select>

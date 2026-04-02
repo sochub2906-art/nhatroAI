@@ -25,7 +25,12 @@ const COPY = {
 export default function Pricing() {
     const navigate = useNavigate();
     const { pricingTiers } = useApp();
-    const featuredTierId = pricingTiers[1]?.id || pricingTiers[0]?.id || '';
+    // Filter out custom per-host tiers — they have 'tùy chỉnh' or 'custom' in name
+    const publicTiers = pricingTiers.filter(t => {
+        const n = t.name.toLowerCase();
+        return !n.includes('tùy chỉnh') && !n.includes('custom') && !n.includes('tier_custom');
+    });
+    const featuredTierId = publicTiers[1]?.id || publicTiers[0]?.id || '';
 
     return (
         <div className="min-h-screen bg-[#07111f] text-slate-100">
@@ -73,14 +78,15 @@ export default function Pricing() {
                     </div>
                 </section>
 
-                <section className="mt-10 grid gap-6 xl:grid-cols-3">
-                    {pricingTiers.map((tier) => {
+                {/* Mobile: horizontal snap scroll | Desktop: 3-col grid */}
+                <section className="mt-10 flex gap-5 overflow-x-auto snap-x snap-mandatory pb-4 xl:grid xl:grid-cols-3 xl:overflow-visible xl:pb-0 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                    {publicTiers.map((tier) => {
                         const isFeatured = tier.id === featuredTierId;
 
                         return (
                             <article
                                 key={tier.id}
-                                className={`relative flex h-full flex-col overflow-hidden rounded-[2rem] border p-6 shadow-[0_24px_80px_rgba(2,6,23,0.28)] transition duration-300 ${isFeatured
+                                className={`relative flex flex-col overflow-hidden rounded-[2rem] border p-6 shadow-[0_24px_80px_rgba(2,6,23,0.28)] transition duration-300 min-w-[85vw] sm:min-w-[340px] xl:min-w-0 snap-center shrink-0 xl:shrink xl:snap-align-none ${isFeatured
                                     ? 'border-blue-400/40 bg-gradient-to-br from-blue-600 to-indigo-700 text-white'
                                     : 'border-white/10 bg-slate-950/70 text-slate-100'
                                     }`}

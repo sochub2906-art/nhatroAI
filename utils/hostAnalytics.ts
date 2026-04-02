@@ -31,6 +31,11 @@ export interface HostFinancialSnapshot {
         year: number;
         total: number;
         byCategory: CategorySummary[];
+        rawPayments: {
+            day: Payment[];
+            month: Payment[];
+            year: Payment[];
+        };
     };
     expense: {
         month: number;
@@ -178,15 +183,30 @@ export function createHostFinancialSnapshot(input: {
         total: 0,
     };
 
+    const rawPayments = {
+        day: [] as Payment[],
+        month: [] as Payment[],
+        year: [] as Payment[],
+    };
+
     for (const payment of paidPayments) {
         const date = parseDate(payment.paidDate || payment.sourceDate || payment.dueDate);
         const category = inferPaymentCategory(payment);
         const collectedAmount = getPaymentPaidAmount(payment);
         accumulate(incomeCategoryMap, category, collectedAmount);
 
-        if (isWithinRange(date, ranges.day)) incomeByRange.day += collectedAmount;
-        if (isWithinRange(date, ranges.month)) incomeByRange.month += collectedAmount;
-        if (isWithinRange(date, ranges.year)) incomeByRange.year += collectedAmount;
+        if (isWithinRange(date, ranges.day)) {
+            incomeByRange.day += collectedAmount;
+            rawPayments.day.push(payment);
+        }
+        if (isWithinRange(date, ranges.month)) {
+            incomeByRange.month += collectedAmount;
+            rawPayments.month.push(payment);
+        }
+        if (isWithinRange(date, ranges.year)) {
+            incomeByRange.year += collectedAmount;
+            rawPayments.year.push(payment);
+        }
         if (isWithinRange(date, ranges.total)) incomeByRange.total += collectedAmount;
     }
 
@@ -240,6 +260,7 @@ export function createHostFinancialSnapshot(input: {
         totalDebt,
         income: {
             ...incomeByRange,
+            rawPayments,
             byCategory: toMap(
                 Array.from(incomeCategoryMap.entries()).map(([key, amount]) => ({
                     key,

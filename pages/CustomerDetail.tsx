@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useApp, formatCurrency } from '../AppContext';
-import { ArrowLeft, User, Phone, Mail, CreditCard, History, CheckCircle, AlertCircle, Clock, BadgeCheck, Image, Loader2, Eye, X, FileText } from 'lucide-react';
+import { ArrowLeft, User, Phone, Mail, CreditCard, History, CheckCircle, AlertCircle, Clock, BadgeCheck, Image, Loader2, Eye, X, FileText, Upload, Trash2, Edit3, Save } from 'lucide-react';
 import { Payment } from '../types';
 import { downloadResidenceDeclarationFile } from '../utils/residenceDeclaration';
+import { compressImageFile } from '../utils/imageCompressor';
 
 export default function CustomerDetail() {
   const { customerId } = useParams();
@@ -12,6 +13,13 @@ export default function CustomerDetail() {
   const [sheetImages, setSheetImages] = useState<{ idFrontImage?: string; idBackImage?: string; avatarImage?: string } | null>(null);
   const [loadingImages, setLoadingImages] = useState(false);
   const [viewImage, setViewImage] = useState<string | null>(null);
+  const [uploadingSlot, setUploadingSlot] = useState<string | null>(null);
+  const [isEditingNotes, setIsEditingNotes] = useState(false);
+  const [notesText, setNotesText] = useState('');
+
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const frontInputRef = useRef<HTMLInputElement>(null);
+  const backInputRef = useRef<HTMLInputElement>(null);
 
   const customer = customers.find(c => c.id === customerId);
   const customerContracts = contracts.filter(c => c.customerId === customerId);
@@ -24,6 +32,12 @@ export default function CustomerDetail() {
   const totalDebt = customerPayments
     .filter(p => p.status !== 'Đã đóng')
     .reduce((sum, p) => sum + p.amount, 0);
+
+  useEffect(() => {
+    if (customer?.notes !== undefined && !isEditingNotes) {
+      setNotesText(customer.notes || '');
+    }
+  }, [customer?.notes, isEditingNotes]);
 
   if (!customer) return <div className="p-6">Không tìm thấy khách thuê!</div>;
 
@@ -53,6 +67,26 @@ export default function CustomerDetail() {
     setLoadingImages(false);
   };
 
+  // Silent image upload handler
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>, field: 'avatarImage' | 'idFrontImage' | 'idBackImage') => {
+    const file = event.target.files?.[0];
+    if (!file || !customer) return;
+    event.target.value = '';
+
+    setUploadingSlot(field);
+    const compressed = await compressImageFile(file);
+    if (compressed) {
+      updateCustomer({ ...customer, [field]: compressed });
+    }
+    setUploadingSlot(null);
+  };
+
+  // Silent image delete handler
+  const handleImageDelete = (field: 'avatarImage' | 'idFrontImage' | 'idBackImage') => {
+    if (!customer) return;
+    updateCustomer({ ...customer, [field]: '' });
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'Đã đóng':
@@ -75,6 +109,21 @@ export default function CustomerDetail() {
     });
   };
 
+  const imageSlots: { label: string; field: 'avatarImage' | 'idFrontImage' | 'idBackImage'; src: string; ref: React.RefObject<HTMLInputElement | null> }[] = [
+    { label: 'Ảnh chân dung', field: 'avatarImage', src: displayImages.avatarImage, ref: avatarInputRef },
+    { label: 'CCCD Mặt trước', field: 'idFrontImage', src: displayImages.idFrontImage, ref: frontInputRef },
+    { label: 'CCCD Mặt sau', field: 'idBackImage', src: displayImages.idBackImage, ref: backInputRef },
+  ];
+
+  // Hidden file inputs
+  const fileInputs = (
+    <>
+      <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload(e, 'avatarImage')} />
+      <input ref={frontInputRef} type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload(e, 'idFrontImage')} />
+      <input ref={backInputRef} type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload(e, 'idBackImage')} />
+    </>
+  );
+
   return (
     <div className="space-y-6">
       <Link to="/app/customers" className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition">
@@ -89,6 +138,8 @@ export default function CustomerDetail() {
         <FileText className="h-4 w-4" />
         Xuất CT01 PDF
       </button>
+
+      {fileInputs}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Profile Card */}
@@ -149,6 +200,39 @@ export default function CustomerDetail() {
               </div>
             </div>
           </div>
+
+          {/* Notes Card */}
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6 shadow-sm">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2"><FileText className="w-5 h-5 text-blue-500" /> Ghi chú</h3>
+              {!isEditingNotes ? (
+                <button onClick={() => setIsEditingNotes(true)} className="text-gray-400 hover:text-blue-500 transition-colors" title="Sửa ghi chú">
+                  <Edit3 size={18} />
+                </button>
+              ) : (
+                <button onClick={() => {
+                  setIsEditingNotes(false);
+                  updateCustomer({ ...customer, notes: notesText });
+                }} className="text-green-600 hover:text-green-700 transition-colors" title="Lưu ghi chú">
+                  <Save size={18} />
+                </button>
+              )}
+            </div>
+            {isEditingNotes ? (
+              <textarea
+                value={notesText}
+                onChange={e => setNotesText(e.target.value)}
+                className="w-full text-sm rounded-lg border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500 p-3 shadow-sm"
+                rows={5}
+                placeholder="Nhập ghi chú hoặc thông tin đặc biệt về khách hàng này..."
+                autoFocus
+              />
+            ) : (
+              <div className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap min-h-[60px] p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-800">
+                {customer.notes || <span className="italic text-gray-400">Chưa có ghi chú nào...</span>}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* KYC Card + Images */}
@@ -182,35 +266,57 @@ export default function CustomerDetail() {
               </div>
             </div>
 
-            {/* Inline Image Gallery */}
+            {/* Inline Image Gallery with Upload */}
             <div className="pt-6 border-t border-gray-100 dark:border-gray-800">
               <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-4 flex items-center gap-2">
                 <Eye size={16} className="text-blue-500" /> Hình ảnh CCCD & Chân dung
               </h4>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {[
-                  { label: 'Ảnh chân dung', src: displayImages.avatarImage },
-                  { label: 'CCCD Mặt trước', src: displayImages.idFrontImage },
-                  { label: 'CCCD Mặt sau', src: displayImages.idBackImage }
-                ].map((img, idx) => (
-                  <div key={idx} className="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden bg-gray-50 dark:bg-gray-800">
-                    <p className="text-xs font-medium text-center py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">{img.label}</p>
-                    {img.src ? (
-                      <div
-                        className="cursor-pointer hover:opacity-80 transition-opacity"
-                        onClick={() => setViewImage(img.src!)}
-                      >
-                        <img
-                          src={img.src}
-                          alt={img.label}
-                          className="w-full h-48 object-cover"
-                          onError={(e) => { (e.target as HTMLImageElement).src = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 150"><rect width="200" height="150" fill="%23f1f5f9"/><text x="100" y="75" text-anchor="middle" fill="%2394a3b8" font-size="12">Không tải được</text></svg>'); }}
-                        />
+                {imageSlots.map(slot => (
+                  <div key={slot.field} className="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden bg-gray-50 dark:bg-gray-800">
+                    <p className="text-xs font-medium text-center py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">{slot.label}</p>
+                    {slot.src ? (
+                      <div className="relative group">
+                        <div
+                          className="cursor-pointer hover:opacity-80 transition-opacity"
+                          onClick={() => setViewImage(slot.src)}
+                        >
+                          <img
+                            src={slot.src}
+                            alt={slot.label}
+                            className="w-full h-48 object-cover"
+                            onError={(e) => { (e.target as HTMLImageElement).src = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 150"><rect width="200" height="150" fill="%23f1f5f9"/><text x="100" y="75" text-anchor="middle" fill="%2394a3b8" font-size="12">Không tải được</text></svg>'); }}
+                          />
+                        </div>
+                        {hostFeatureFlags.imageUpload && (
+                          <button
+                            type="button"
+                            onClick={() => handleImageDelete(slot.field)}
+                            className="absolute top-2 right-2 rounded-full bg-black/50 p-1.5 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-red-600"
+                            title="Xóa ảnh"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
                       </div>
                     ) : (
                       <div className="w-full h-48 flex items-center justify-center text-gray-400 text-sm italic">
                         Chưa có ảnh
                       </div>
+                    )}
+                    {hostFeatureFlags.imageUpload && (
+                      <button
+                        type="button"
+                        onClick={() => slot.ref.current?.click()}
+                        disabled={uploadingSlot === slot.field}
+                        className="flex w-full items-center justify-center gap-1.5 border-t border-gray-200 bg-white px-3 py-2.5 text-xs font-medium text-blue-600 transition hover:bg-blue-50 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-blue-400 dark:hover:bg-gray-700"
+                      >
+                        {uploadingSlot === slot.field ? (
+                          <><Loader2 size={14} className="animate-spin" /> Đang nén...</>
+                        ) : (
+                          <><Upload size={14} /> Chọn ảnh</>
+                        )}
+                      </button>
                     )}
                   </div>
                 ))}

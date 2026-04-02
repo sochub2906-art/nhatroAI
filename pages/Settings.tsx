@@ -24,13 +24,15 @@ import {
     Users,
     X,
     BadgeCheck,
+    Send,
 } from 'lucide-react';
 import { EmailAuthProvider, reauthenticateWithCredential, sendPasswordResetEmail, updatePassword } from 'firebase/auth';
-import { useApp } from '../AppContext';
+import { useApp, formatCurrency } from '../AppContext';
 import { exportHostDataToExcel } from '../services/excelExport';
 import { auth, TENANT_LOGIN_ENABLED } from '../firebase';
 import HostSubscriptionPanel from '../components/HostSubscriptionPanel';
 import { formatDateTimeVN } from '../utils/dateFormat';
+import MasterBulkImportModal from '../components/MasterBulkImportModal';
 
 type TabKey = 'profile' | 'subscription' | 'data' | 'system' | 'leads' | 'tenants';
 
@@ -40,6 +42,7 @@ export default function Settings() {
         allUsers,
         userProfile,
         updateUserProfile,
+        updateUser,
         adminSettings,
         updateAdminSettings,
         leads,
@@ -81,6 +84,7 @@ export default function Settings() {
     const [importJson, setImportJson] = useState('');
     const [showSuccess, setShowSuccess] = useState(false);
     const [showTenantModal, setShowTenantModal] = useState(false);
+    const [showMasterModal, setShowMasterModal] = useState(false);
     const [tenantForm, setTenantForm] = useState({ name: '', email: '', phone: '', linkedContractId: '' });
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
@@ -312,6 +316,35 @@ export default function Settings() {
                                         />
                                     </div>
                                 ))}
+                                
+                                {currentUser?.role === 'HOST' && (
+                                    <div className="pt-2">
+                                        <label className="block text-sm font-medium mb-2 text-slate-700 dark:text-slate-300">Tích hợp tự động SePay Webhook</label>
+                                        <div className="p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <span className="text-sm font-medium">Trạng thái:</span>
+                                                <span className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded-full tracking-wide ${currentUser?.sepayStatus === 'active' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' : currentUser?.sepayStatus === 'pending' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400' : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300'}`}>
+                                                    {currentUser?.sepayStatus === 'active' ? 'Đã kích hoạt' : currentUser?.sepayStatus === 'pending' ? 'Chờ Admin duyệt' : 'Chưa sử dụng'}
+                                                </span>
+                                            </div>
+                                            
+                                            {currentUser?.sepayStatus === 'active' ? (
+                                                <div className="space-y-2 mt-3 text-sm">
+                                                    <p className="text-slate-500 dark:text-slate-400">Webhook URL (Dán vào cài đặt SePay):</p>
+                                                    <input type="text" readOnly className="w-full p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg font-mono text-[11px] outline-none text-slate-600 dark:text-slate-400" value={`${import.meta.env.VITE_SUPABASE_URL || 'https://[SUPABASE].supabase.co'}/functions/v1/sepay-webhook?type=host&hostId=${currentUser.id}&token=${currentUser.sepayWebhookToken || ''}`} />
+                                                    <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">Khi khách chuyển khoản khớp mã nợ (VD: BL_123), hệ thống sẽ gạch nợ thành Đã Đóng.</p>
+                                                </div>
+                                            ) : (
+                                                <div className="mt-2 text-sm text-slate-500 space-y-2">
+                                                    <p className="text-xs leading-5">Gạch nợ tự động bằng SePay đòi hỏi Admin cấp phép. Sau đó bạn sẽ có Webhook URL để dán vào cấu hình SePay.</p>
+                                                    {(!currentUser?.sepayStatus || currentUser?.sepayStatus === 'unregistered' || currentUser?.sepayStatus === 'rejected') ? (
+                                                        <button type="button" onClick={async () => { await updateUser({ ...currentUser, sepayStatus: 'pending' }); setProfileForm({ ...profileForm, sepayStatus: 'pending' as any }); window.dispatchEvent(new Event('usersDataChanged')); alert('Đã gửi yêu cầu đăng ký tích hợp SePay tới Admin!'); }} className="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-medium text-xs rounded-lg transition-colors">Yêu cầu mở SePay tự động</button>
+                                                    ) : null}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -507,9 +540,12 @@ export default function Settings() {
                         </div>
 
                         <div className="border-t border-slate-100 dark:border-slate-800 pt-8">
-                            <h2 className="text-lg font-semibold mb-3 flex items-center gap-2"><Upload size={20} className="text-blue-500" /> Nhập dữ liệu</h2>
+                            <div className="flex flex-col md:flex-row justify-between mb-3 items-start gap-4">
+                                <h2 className="text-lg font-semibold flex items-center gap-2"><Upload size={20} className="text-blue-500" /> Nhập dữ liệu</h2>
+                                <button onClick={() => setShowMasterModal(true)} className="bg-amber-600 hover:bg-amber-700 text-white px-6 py-2 rounded-xl flex items-center gap-2 font-medium shadow-lg shadow-amber-600/20 whitespace-nowrap"><FileSpreadsheet size={18} /> Khởi tạo dữ liệu Excel (Tất cả)</button>
+                            </div>
                             <textarea value={importJson} onChange={(e) => setImportJson(e.target.value)} className="w-full h-32 p-3 font-mono text-xs border rounded-xl mb-4 dark:bg-slate-800 dark:border-slate-700 outline-none focus:ring-2 focus:ring-blue-500" placeholder='{"buildings": [...]}' />
-                            <button onClick={handleImport} disabled={!importJson.trim()} className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-400 text-white px-6 py-2.5 rounded-xl flex items-center gap-2 font-medium"><Upload size={18} /> Phục hồi</button>
+                            <button onClick={handleImport} disabled={!importJson.trim()} className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-400 text-white px-6 py-2.5 rounded-xl flex items-center gap-2 font-medium"><Upload size={18} /> Phục hồi từ JSON</button>
                         </div>
                     </div>
                 )}
@@ -543,6 +579,47 @@ export default function Settings() {
                                 <button type="button" onClick={toggleTheme} className="px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 rounded-lg text-sm font-medium transition-colors">
                                     Đổi giao diện
                                 </button>
+                            </div>
+
+                            <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 mt-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
+                                        <Send size={20} />
+                                    </div>
+                                    <div>
+                                        <p className="font-medium text-slate-900 dark:text-white">Dịch vụ gửi Zalo ZNS (Premium)</p>
+                                        <p className="text-xs text-slate-500">
+                                            {adminSettings.zaloZnsConfig?.enabled
+                                                ? adminSettings.zaloZnsConfig.description || `Chi phí: ${formatCurrency(adminSettings.zaloZnsConfig.pricePerMonth || 0)}/tháng`
+                                                : 'Chưa hỗ trợ Zalo ZNS tự động lúc này.'}
+                                        </p>
+                                    </div>
+                                </div>
+                                
+                                {adminSettings.zaloZnsConfig?.enabled && (
+                                    <div className="flex items-center gap-3">
+                                        {currentUser?.zaloZnsStatus === 'active' && (
+                                            <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 text-xs font-semibold">Đã đăng ký</span>
+                                        )}
+                                        {currentUser?.zaloZnsStatus === 'pending' && (
+                                            <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 text-xs font-semibold">Đang duyệt</span>
+                                        )}
+                                        {(!currentUser?.zaloZnsStatus || currentUser?.zaloZnsStatus === 'unregistered' || currentUser?.zaloZnsStatus === 'rejected') && (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    if (currentUser) {
+                                                        updateUser({ ...currentUser, zaloZnsStatus: 'pending' });
+                                                        alert('Đã gửi yêu cầu đăng ký dịch vụ Zalo ZNS. Vui lòng chờ admin xem xét.');
+                                                    }
+                                                }}
+                                                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm text-white font-medium transition-colors shadow-sm"
+                                            >
+                                                Đăng ký ngay
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -623,6 +700,11 @@ export default function Settings() {
                     </div>
                 </div>
             )}
+            
+            <MasterBulkImportModal 
+                isOpen={showMasterModal} 
+                onClose={() => setShowMasterModal(false)} 
+            />
         </div>
     );
 }

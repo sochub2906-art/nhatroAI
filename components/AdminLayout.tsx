@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useApp } from '../AppContext';
-import { Shield, LayoutDashboard, Users, Building, Settings, LogOut, Moon, Sun, Sparkles, CreditCard, Briefcase, Menu, X, Bell } from 'lucide-react';
+import { Shield, LayoutDashboard, Users, Building, Settings, LogOut, Moon, Sun, Sparkles, CreditCard, Briefcase, Menu, X, Bell, Globe, ShieldCheck } from 'lucide-react';
 
 const AdminSideLink = ({ to, icon: Icon, children, onClick }: { to: string; icon: any; children: React.ReactNode; onClick?: () => void }) => (
     <NavLink to={to} end onClick={onClick} className={({ isActive }) =>
@@ -19,7 +19,8 @@ export default function AdminLayout() {
     const navigate = useNavigate();
     const [sidebarOpen, setSidebarOpen] = React.useState(false);
 
-    if (!currentUser || currentUser.role !== 'SUPER_ADMIN') {
+    const adminRoles = ['SUPER_ADMIN', 'ADMIN_L2', 'ACCOUNTANT'] as const;
+    if (!currentUser || !adminRoles.includes(currentUser.role as any)) {
         return <div className="min-h-screen flex items-center justify-center text-slate-500">Không có quyền truy cập.</div>;
     }
 
@@ -65,6 +66,8 @@ export default function AdminLayout() {
                     <AdminSideLink to="/admin/hosts" icon={Building} onClick={closeSidebar}>Quản lý Host</AdminSideLink>
                     <AdminSideLink to="/admin/plans" icon={CreditCard} onClick={closeSidebar}>Gói dịch vụ</AdminSideLink>
                     <div className="pt-3 mt-3 border-t border-slate-100 dark:border-slate-800">
+                        <AdminSideLink to="/admin/cms" icon={Globe} onClick={closeSidebar}>Quản lý CMS</AdminSideLink>
+                        <AdminSideLink to="/admin/roles" icon={ShieldCheck} onClick={closeSidebar}>Phân quyền</AdminSideLink>
                         <AdminSideLink to="/admin/settings" icon={Settings} onClick={closeSidebar}>Cài đặt hệ thống</AdminSideLink>
                     </div>
                 </nav>

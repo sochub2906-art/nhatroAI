@@ -22,7 +22,8 @@ import {
     removeHostNotification, saveHostNotifications, upsertHostNotifications
 } from './services/notificationStoreService';
 import { exportHostDataToExcel } from './services/excelExport';
-import { auth, secondaryAuth, TENANT_LOGIN_ENABLED } from './firebase';
+import { auth, secondaryAuth, TENANT_LOGIN_ENABLED, messaging } from './firebase';
+import { getToken, onMessage } from 'firebase/messaging';
 import { buildRoomBills } from './utils/paymentBills';
 import { compareBillingPeriods, getNextBillingPeriod, parseBillingPeriod } from './utils/billingPeriods';
 import { getContractExpiryState, getCurrentBillingPeriod } from './utils/contractStatus';
@@ -33,7 +34,7 @@ import {
     saveAdminSettings, listenAdminSettings,
     savePricingTiers, listenPricingTiers,
     initDefaultsIfNeeded, fetchHostBusinessSnapshot, saveHostBusinessSnapshot,
-    resetSnapshotCircuitBreakers
+    resetSnapshotCircuitBreakers, sbSaveUserPushToken, sbDeleteUserPushToken
 } from './services/supabaseService';
 import { buildHostPaymentWebhookUrl, normalizeHostPaymentGatewayConfig } from './utils/paymentGateway';
 import { DEFAULT_SUBSCRIPTION_CHANNELS, buildPlanFeatureList, normalizeSubscriptionChannels } from './utils/subscriptionPayments';
@@ -129,10 +130,14 @@ interface AppContextType {
     deleteBuilding: (id: string) => boolean;
     addRoom: (room: Room, initialEquipment?: Partial<Equipment>[]) => void;
     addRoomsBulk: (rooms: Room[], equipment: Equipment[]) => void;
+    addCustomersBulk: (customers: Customer[]) => void;
+    addEquipmentBulk: (equipment: Equipment[]) => void;
     deleteRoom: (id: string) => void;
+    updateRoom: (room: Room) => void;
     updateRoomPosition: (id: string, floor: number, x: number, y: number) => void;
     addCustomer: (customer: Customer) => void;
     updateCustomer: (customer: Customer) => void;
+    deleteCustomer: (id: string) => void;
     createContract: (contract: Contract) => void;
     updateContract: (contract: Contract) => void;
     terminateContract: (id: string) => void;
@@ -162,6 +167,7 @@ interface AppContextType {
     lastSyncTime: string | null;
     exportData: () => string;
     importData: (jsonData: string) => boolean;
+    requestNotificationPermission: () => Promise<boolean>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -308,6 +314,89 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const bankInfoRef = useRef<BankInfo>({ bankName: '', accountNumber: '', accountName: '' });
     bankInfoRef.current = bankInfo;
 
+    const unreadNotificationCount = notifications.filter(notification => !notification.readAt).length;
+
+    const persistHostNotifications = useCallback((hostId: string, next: AppNotification[]) => {
+        saveHostNotifications(hostId, next);
+        const stored = loadHostNotifications(hostId);
+        processedRemoteNotificationIdsRef.current = new Set(stored.map(notification => notification.id));
+        setNotifications(stored);
+    }, []);
+
+    const mergeHostNotifications = useCallback((hostId: string, incoming: AppNotification[]) => {
+        const next = upsertHostNotifications(hostId, incoming);
+        processedRemoteNotificationIdsRef.current = new Set(next.map(notification => notification.id));
+        setNotifications(next);
+        return next;
+    }, []);
+
+    const createHostNotification = useCallback((draft: Omit<AppNotification, 'id' | 'hostId' | 'createdAt'> & Partial<Pick<AppNotification, 'id' | 'hostId' | 'createdAt'>>) => {
+        const hostId = draft.hostId || currentUser?.id;
+        if (!hostId) return null;
+        const notification: AppNotification = {
+            id: draft.id || `NTF_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+            hostId,
+            title: draft.title,
+            message: draft.message,
+            type: draft.type,
+            severity: draft.severity,
+            createdAt: draft.createdAt || new Date().toISOString(),
+            readAt: draft.readAt,
+            actionPath: draft.actionPath,
+            paymentIds: draft.paymentIds,
+            billId: draft.billId,
+            amount: draft.amount,
+            metadata: draft.metadata,
+        };
+        const next = mergeHostNotifications(hostId, [notification]);
+        if (hostId === currentUser?.id) setNotifications(next);
+        return notification;
+    }, [currentUser?.id, mergeHostNotifications]);
+
+    const requestNotificationPermission = useCallback(async () => {
+        if (!messaging || !currentUser?.id) return false;
+        try {
+            const permission = await Notification.requestPermission();
+            if (permission === 'granted') {
+                const token = await getToken(messaging, {
+                    vapidKey: 'BDphNyoBsubpAMi6QgUAwdEckPXUht3DtXomPlEYn4M4HRE_I6avkQ93U06j_0ZBzUN2zS6FJS4wtmIw6vz4f44' 
+                });
+                if (token) {
+                    await sbSaveUserPushToken(currentUser.id, token);
+                    return true;
+                }
+            }
+            return false;
+        } catch (error) {
+            console.error('Notification permission failed:', error);
+            return false;
+        }
+    }, [currentUser?.id]);
+
+    useEffect(() => {
+        if (!messaging || !currentUser?.id) return;
+
+        // Foreground messaging
+        const unsubscribe = onMessage(messaging, (payload) => {
+            console.log('Foreground message received:', payload);
+            if (payload.notification) {
+                createHostNotification({
+                    title: payload.notification.title || 'Thông báo',
+                    message: payload.notification.body || '',
+                    type: 'system',
+                    severity: 'info'
+                });
+            }
+        });
+
+        // Auto-refresh token if already granted
+        if (Notification.permission === 'granted') {
+            requestNotificationPermission();
+        }
+
+        return () => unsubscribe();
+    }, [currentUser?.id, createHostNotification, requestNotificationPermission]);
+
     const persistSessionUser = useCallback((user: AppUser) => {
         localStorage.setItem(SESSION_ROLE_STORAGE_KEY, user.role);
         localStorage.setItem(SESSION_USER_ID_STORAGE_KEY, user.id);
@@ -365,21 +454,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         });
     }, [bankInfo.accountName, bankInfo.accountNumber, bankInfo.bankName, currentUser?.id, getHostGatewayConfigMap, userProfile.accountName, userProfile.accountNumber, userProfile.bankName]);
 
-    const unreadNotificationCount = notifications.filter(notification => !notification.readAt).length;
 
-    const persistHostNotifications = useCallback((hostId: string, next: AppNotification[]) => {
-        saveHostNotifications(hostId, next);
-        const stored = loadHostNotifications(hostId);
-        processedRemoteNotificationIdsRef.current = new Set(stored.map(notification => notification.id));
-        setNotifications(stored);
-    }, []);
-
-    const mergeHostNotifications = useCallback((hostId: string, incoming: AppNotification[]) => {
-        const next = upsertHostNotifications(hostId, incoming);
-        processedRemoteNotificationIdsRef.current = new Set(next.map(notification => notification.id));
-        setNotifications(next);
-        return next;
-    }, []);
 
     const markNotificationRead = useCallback((id: string) => {
         if (!currentUser?.id) return;
@@ -430,28 +505,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         };
     }, [adminSettings.addons, adminSettings.subscriptionRequests, getHostGatewayConfigMap, pricingTiers]);
 
-    const createHostNotification = useCallback((draft: Omit<AppNotification, 'id' | 'hostId' | 'createdAt'> & Partial<Pick<AppNotification, 'id' | 'hostId' | 'createdAt'>>) => {
-        const hostId = draft.hostId || currentUser?.id;
-        if (!hostId) return null;
-        const notification: AppNotification = {
-            id: draft.id || `NTF_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-            hostId,
-            title: draft.title,
-            message: draft.message,
-            type: draft.type,
-            severity: draft.severity,
-            createdAt: draft.createdAt || new Date().toISOString(),
-            readAt: draft.readAt,
-            actionPath: draft.actionPath,
-            paymentIds: draft.paymentIds,
-            billId: draft.billId,
-            amount: draft.amount,
-            metadata: draft.metadata,
-        };
-        const next = mergeHostNotifications(hostId, [notification]);
-        if (hostId === currentUser?.id) setNotifications(next);
-        return notification;
-    }, [currentUser?.id, mergeHostNotifications]);
 
     const scheduleSheetQueueFlush = useCallback(() => {
         if (flushQueueTimerRef.current) clearTimeout(flushQueueTimerRef.current);
@@ -1245,11 +1298,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         } catch (error: any) {
             console.warn('Firebase Auth login failed:', error.code, error.message);
 
-            // Reject fallback if password was explicitly wrong
-            const isWrongPassword = error?.code === 'auth/wrong-password'
-                || error?.code === 'auth/invalid-credential';
-            if (isWrongPassword) {
-                console.warn('[LOGIN] Wrong password, rejecting fallback.');
+            // Reject fallback if password was explicitly wrong or if requests are blocked due to rate limiting/user not found
+            const isAuthFailure = error?.code === 'auth/wrong-password'
+                || error?.code === 'auth/invalid-credential'
+                || error?.code === 'auth/too-many-requests'
+                || error?.code === 'auth/user-disabled'
+                || error?.code === 'auth/user-not-found';
+
+            if (isAuthFailure) {
+                console.warn('[LOGIN] Auth failed naturally (wrong password/rate limited/not found), rejecting fallback.');
+                if (error?.code === 'auth/too-many-requests') {
+                    alert('Bạn đã nhập sai quá nhiều lần. Quyền đăng nhập tạm thời bị khóa, vui lòng thử lại sau.');
+                }
                 return null;
             }
 
@@ -1470,11 +1530,63 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             normalizedEquipment.forEach(eq => upsertCacheItem(currentUser.id, 'equipment', eq));
         }
     };
+
+    const addEquipmentBulk = (newEqs: Equipment[]) => {
+        const normalizedEquipment: Equipment[] = newEqs.map(item => normalizeEquipment(item));
+        const nextEquipment = [...equipment, ...normalizedEquipment];
+        setEquipment(nextEquipment);
+
+        const url = getWebhookUrl();
+        const sheetId = getSheetId();
+        if (url && sheetId && currentUser) {
+            batchSyncToSheet(url, sheetId, buildHostSnapshot({
+                equipment: nextEquipment
+            })).catch(console.error);
+        }
+
+        if (currentUser) {
+            normalizedEquipment.forEach(eq => upsertCacheItem(currentUser.id, 'equipment', eq));
+        }
+    };
+
+    const addCustomersBulk = (newCustomers: Customer[]) => {
+        const fullCustomers = newCustomers.map(c => ({
+            ...c,
+            nationality: c.nationality || 'Việt Nam',
+            currentAddress: c.currentAddress || c.permanentAddress || '',
+            residenceAddress: c.residenceAddress || c.currentAddress || c.permanentAddress || '',
+            declarationCreated: c.declarationCreated ?? false,
+            declarationStatus: c.declarationStatus || 'not_created',
+            hostId: c.hostId || currentUser?.id,
+            createdAt: c.createdAt || new Date().toISOString()
+        }));
+
+        const nextCustomers = [...customers, ...fullCustomers];
+        setCustomers(nextCustomers);
+
+        const url = getWebhookUrl();
+        const sheetId = getSheetId();
+        if (url && sheetId && currentUser) {
+            batchSyncToSheet(url, sheetId, buildHostSnapshot({
+                customers: nextCustomers
+            })).catch(console.error);
+        }
+
+        if (currentUser) {
+            fullCustomers.forEach(c => upsertCacheItem(currentUser.id, 'customers', c));
+        }
+    };
     const deleteRoom = (id: string) => {
         if (!canDelete()) { alert('Bạn không có quyền xóa!'); return; }
         setRooms(prev => prev.filter(r => r.id !== id));
         removeFromSheet('rooms', id);
         if (currentUser) deleteCacheItem(currentUser.id, 'rooms', id);
+    };
+    const updateRoom = (updatedRoom: Room) => {
+        if (!canDelete()) { alert('Bạn không có quyền sửa!'); return; }
+        setRooms(prev => prev.map(r => r.id === updatedRoom.id ? updatedRoom : r));
+        pushToSheet('rooms', updatedRoom);
+        if (currentUser) upsertCacheItem(currentUser.id, 'rooms', updatedRoom);
     };
     const updateRoomPosition = (id: string, _floor: number, x: number, y: number) => {
         setRooms(prev => prev.map(r => r.id === id ? { ...r, position: { x, y } } : r));
@@ -1517,6 +1629,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setCustomers(prev => prev.map(item => item.id === nextCustomer.id ? nextCustomer : item));
         pushToSheet('customers', nextCustomer);
         if (currentUser) upsertCacheItem(currentUser.id, 'customers', nextCustomer);
+    };
+
+    const deleteCustomer = (id: string) => {
+        if (!canDelete()) { alert('Bạn không có quyền xóa!'); return; }
+        setCustomers(prev => prev.filter(c => c.id !== id));
+        removeFromSheet('customers', id);
+        if (currentUser) deleteCacheItem(currentUser.id, 'customers', id);
     };
 
     // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -2302,10 +2421,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         deleteBuilding,
         addRoom,
         addRoomsBulk,
+        addCustomersBulk,
+        addEquipmentBulk,
         deleteRoom,
+        updateRoom,
         updateRoomPosition,
         addCustomer,
         updateCustomer,
+        deleteCustomer,
         createContract,
         updateContract,
         terminateContract,
@@ -2335,6 +2458,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         lastSyncTime,
         exportData,
         importData,
+        requestNotificationPermission,
     };
 
     return <AppContext.Provider value={context}>{children}</AppContext.Provider>;

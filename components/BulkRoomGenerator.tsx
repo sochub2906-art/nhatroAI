@@ -122,8 +122,8 @@ export default function BulkRoomGenerator({ buildingId, onClose }: Props) {
   if (!building) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-sm">
-      <div className="my-4 flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+    <div className="fixed inset-0 z-[60] overflow-y-auto bg-black/60 p-4 backdrop-blur-sm">
+      <div className="mx-auto my-4 flex w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl md:max-h-[90vh] dark:border-slate-800 dark:bg-slate-900">
         <div className="flex shrink-0 items-center justify-between bg-blue-600 p-5 text-white">
           <div className="flex items-center gap-3">
             <div className="rounded-lg bg-blue-500 p-2">
@@ -143,7 +143,7 @@ export default function BulkRoomGenerator({ buildingId, onClose }: Props) {
         </div>
 
         <div className="flex flex-1 flex-col overflow-hidden md:flex-row">
-          <div className="w-full shrink-0 overflow-y-auto border-r border-slate-200 bg-slate-50 p-6 dark:border-slate-800 dark:bg-slate-800/50 md:w-80">
+          <div className="w-full shrink-0 overflow-y-auto border-b border-slate-200 bg-slate-50 p-5 md:max-h-none md:w-80 md:border-b-0 md:border-r md:p-6 dark:border-slate-800 dark:bg-slate-800/50">
             <h4 className="mb-4 flex items-center gap-2 font-semibold text-slate-800 dark:text-slate-200">
               <Settings className="h-4 w-4 text-blue-500" />
               Cấu hình sinh bản nháp

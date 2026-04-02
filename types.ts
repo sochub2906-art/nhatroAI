@@ -1,4 +1,58 @@
-export type UserRole = 'SUPER_ADMIN' | 'SALES' | 'HOST' | 'TENANT';
+export type UserRole = 'SUPER_ADMIN' | 'ADMIN_L2' | 'SALES' | 'ACCOUNTANT' | 'HOST' | 'TENANT';
+
+// ═══════════════════════════════════════
+// ROLE PERMISSION SYSTEM
+// ═══════════════════════════════════════
+
+export type AdminPermission =
+    | 'manage_users'
+    | 'manage_hosts'
+    | 'manage_plans'
+    | 'manage_sales'
+    | 'manage_cms'
+    | 'manage_settings'
+    | 'manage_roles'
+    | 'view_dashboard'
+    | 'view_revenue'
+    | 'manage_payments'
+    | 'manage_subscriptions'
+    | 'export_data';
+
+export interface PermissionMeta {
+    key: AdminPermission;
+    label: string;
+    desc: string;
+    group: 'core' | 'data' | 'finance' | 'system';
+}
+
+export const PERMISSIONS_LIST: PermissionMeta[] = [
+    { key: 'view_dashboard',       label: 'Xem tổng quan',              desc: 'Truy cập Dashboard tổng quan', group: 'core' },
+    { key: 'manage_users',         label: 'Quản lý Users',              desc: 'Thêm, sửa, xóa tài khoản người dùng', group: 'core' },
+    { key: 'manage_hosts',         label: 'Quản lý Hosts',              desc: 'Xem và quản lý dữ liệu Host', group: 'core' },
+    { key: 'manage_sales',         label: 'Quản lý Sales',              desc: 'Lead, proposal và pipeline bán hàng', group: 'core' },
+    { key: 'manage_plans',         label: 'Quản lý gói dịch vụ',       desc: 'Tạo và chỉnh sửa pricing tiers', group: 'finance' },
+    { key: 'manage_payments',      label: 'Quản lý thanh toán',         desc: 'Xem và xử lý giao dịch thanh toán', group: 'finance' },
+    { key: 'manage_subscriptions', label: 'Quản lý đăng ký gói',       desc: 'Duyệt yêu cầu nâng cấp, addon', group: 'finance' },
+    { key: 'view_revenue',         label: 'Xem doanh thu',              desc: 'Truy cập báo cáo doanh thu và thống kê', group: 'finance' },
+    { key: 'export_data',          label: 'Xuất dữ liệu',              desc: 'Export báo cáo, backup dữ liệu', group: 'data' },
+    { key: 'manage_cms',           label: 'Quản lý CMS',               desc: 'Tạo và chỉnh sửa trang nội dung', group: 'data' },
+    { key: 'manage_settings',      label: 'Cài đặt hệ thống',          desc: 'Thay đổi cấu hình toàn cục', group: 'system' },
+    { key: 'manage_roles',         label: 'Phân quyền vai trò',         desc: 'Thay đổi quyền hạn của các role', group: 'system' },
+];
+
+export const ADMIN_ROLE_META: { role: UserRole; label: string; desc: string; locked?: boolean }[] = [
+    { role: 'SUPER_ADMIN', label: 'Super Admin',    desc: 'Toàn quyền hệ thống — không thể thay đổi', locked: true },
+    { role: 'ADMIN_L2',    label: 'Admin cấp 2',    desc: 'Quản trị viên hỗ trợ, quyền hạn bị giới hạn' },
+    { role: 'SALES',       label: 'Nhân viên Sales', desc: 'Quản lý lead, host và pipeline bán hàng' },
+    { role: 'ACCOUNTANT',  label: 'Kế toán',         desc: 'Theo dõi doanh thu, thanh toán và giao dịch' },
+];
+
+export const DEFAULT_ROLE_PERMISSIONS: Record<string, AdminPermission[]> = {
+    SUPER_ADMIN: PERMISSIONS_LIST.map(p => p.key),  // Full access
+    ADMIN_L2: ['view_dashboard', 'manage_users', 'manage_hosts', 'manage_sales', 'manage_cms', 'view_revenue', 'export_data'],
+    SALES: ['view_dashboard', 'manage_sales', 'manage_hosts'],
+    ACCOUNTANT: ['view_dashboard', 'view_revenue', 'manage_payments', 'manage_subscriptions', 'export_data'],
+};
 
 export interface AppUser {
     id: string;
@@ -18,6 +72,9 @@ export interface AppUser {
     linkedRoomId?: string;
     linkedContractId?: string;
     assignedHostIds?: string[];
+    zaloZnsStatus?: 'unregistered' | 'pending' | 'active' | 'rejected';
+    sepayStatus?: 'unregistered' | 'pending' | 'active' | 'rejected';
+    sepayWebhookToken?: string;
     createdAt?: string;
 }
 
@@ -293,6 +350,8 @@ export interface UserProfile {
     idFrontImage?: string;
     idBackImage?: string;
     avatarImage?: string;
+    sepayStatus?: 'unregistered' | 'pending' | 'active' | 'rejected';
+    sepayWebhookToken?: string;
 }
 
 export interface AdminSettings {
@@ -300,12 +359,27 @@ export interface AdminSettings {
     salesEmail: string;
     googleSheetWebhookUrl?: string;
     landingBackgroundUrl?: string;
+    logoUrl?: string;
+    faviconUrl?: string;
+    companyInfo?: {
+        name?: string;
+        description?: string;
+        address?: string;
+        phone?: string;
+        email?: string;
+        facebookUrl?: string;
+    };
     emailTemplates?: {
         billReminder?: string;
         welcomeTenant?: string;
         contractExpiry?: string;
     };
     salesTeamEmails?: string[];
+    zaloZnsConfig?: {
+        enabled: boolean;
+        pricePerMonth: number;
+        description: string;
+    };
     paymentConfig?: {
         bankName: string;
         accountNumber: string;
@@ -317,6 +391,7 @@ export interface AdminSettings {
     };
     addons?: AddOnFeature[];
     subscriptionRequests?: SubscriptionRequest[];
+    rolePermissions?: Record<string, AdminPermission[]>;
 }
 
 export interface FeatureFlags {
@@ -369,6 +444,8 @@ export interface PricingTier {
     maxRooms: number;
     features: string[];
     featureFlags?: FeatureFlags;
+    isCustom?: boolean;
+    targetHostId?: string;
 }
 
 export interface AddOnFeature {
@@ -439,3 +516,62 @@ export interface HostSubscriptionSnapshot {
     >;
     pendingRequests: SubscriptionRequest[];
 }
+
+// ═══════════════════════════════════════
+// CMS BLOCK BUILDER TYPES
+// ═══════════════════════════════════════
+
+export type CmsBlockType =
+    | 'hero'
+    | 'text'
+    | 'features'
+    | 'image-text'
+    | 'faq'
+    | 'cta'
+    | 'stats'
+    | 'divider'
+    | 'testimonials'
+    | 'gallery';
+
+export interface CmsBlockStyle {
+    bgColor?: string;
+    textColor?: string;
+    padding?: 'none' | 'sm' | 'md' | 'lg' | 'xl';
+    maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
+    darkOverlay?: boolean;
+}
+
+export interface CmsBlock {
+    id: string;
+    type: CmsBlockType;
+    data: Record<string, any>;
+    style?: CmsBlockStyle;
+}
+
+export const CMS_BLOCK_META: { type: CmsBlockType; label: string; icon: string; desc: string }[] = [
+    { type: 'hero', label: 'Hero Banner', icon: 'layout', desc: 'Banner lớn với tiêu đề, mô tả và nút CTA' },
+    { type: 'text', label: 'Văn bản', icon: 'type', desc: 'Nội dung văn bản tự do (rich text)' },
+    { type: 'features', label: 'Tính năng', icon: 'grid-3x3', desc: 'Lưới các thẻ tính năng với icon' },
+    { type: 'image-text', label: 'Ảnh + Văn bản', icon: 'panel-left', desc: 'Hình ảnh kèm nội dung mô tả' },
+    { type: 'faq', label: 'FAQ', icon: 'help-circle', desc: 'Câu hỏi thường gặp dạng accordion' },
+    { type: 'cta', label: 'Call to Action', icon: 'megaphone', desc: 'Banner kêu gọi hành động' },
+    { type: 'stats', label: 'Thống kê', icon: 'bar-chart-3', desc: 'Dãy số liệu ấn tượng' },
+    { type: 'divider', label: 'Phân cách', icon: 'minus', desc: 'Đường kẻ hoặc khoảng trống' },
+    { type: 'testimonials', label: 'Đánh giá', icon: 'quote', desc: 'Lời nhận xét từ khách hàng' },
+    { type: 'gallery', label: 'Thư viện ảnh', icon: 'images', desc: 'Lưới hình ảnh đẹp mắt' },
+];
+
+export interface CmsPage {
+    id: string;
+    slug: string;
+    title: string;
+    contentHtml: string;
+    contentBlocks?: CmsBlock[];
+    metaDescription?: string;
+    isPublished: boolean;
+    category?: 'legal' | 'support' | 'company';
+    sortOrder?: number;
+    updatedAt: string;
+    createdAt: string;
+}
+

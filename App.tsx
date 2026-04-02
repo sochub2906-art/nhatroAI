@@ -18,8 +18,12 @@ const AdminHosts = React.lazy(() => import('./pages/AdminHosts'));
 const AdminPlans = React.lazy(() => import('./pages/AdminPlans'));
 const AdminSettingsPage = React.lazy(() => import('./pages/AdminSettings'));
 const AdminSales = React.lazy(() => import('./pages/AdminSales'));
+const AdminCMS = React.lazy(() => import('./pages/AdminCMS'));
+const AdminRoles = React.lazy(() => import('./pages/AdminRoles'));
 
 const SalesDashboard = React.lazy(() => import('./pages/SalesDashboard'));
+const DynamicPage = React.lazy(() => import('./pages/DynamicPage'));
+
 
 const Dashboard = React.lazy(() => import('./pages/Dashboard'));
 const Revenue = React.lazy(() => import('./pages/Revenue'));
@@ -34,6 +38,18 @@ const Contracts = React.lazy(() => import('./pages/Contracts'));
 const Payments = React.lazy(() => import('./pages/Payments'));
 const Equipment = React.lazy(() => import('./pages/EquipmentManager'));
 const Settings = React.lazy(() => import('./pages/Settings'));
+
+/** Detect PWA standalone mode (installed on home screen) */
+const isPWA = window.matchMedia('(display-mode: standalone)').matches
+    || (window.navigator as any).standalone === true;
+
+/** On PWA, skip landing and go straight to login */
+function PWALandingRedirect() {
+    if (isPWA) {
+        return <Navigate to="/login" replace />;
+    }
+    return <LazyScreen><Landing /></LazyScreen>;
+}
 
 function RouteLoader() {
     return (
@@ -60,7 +76,8 @@ export default function App() {
                 <Routes>
                     {showHost && (
                         <>
-                            <Route path="/" element={<LazyScreen><Landing /></LazyScreen>} />
+                            <Route path="/" element={<PWALandingRedirect />} />
+                            <Route path="/p/:slug" element={<LazyScreen><DynamicPage /></LazyScreen>} />
                             <Route path="/pricing" element={<LazyScreen><Pricing /></LazyScreen>} />
                             <Route path="/login" element={<LazyScreen><LoginPage /></LazyScreen>} />
                             <Route path="/demo" element={<LazyScreen><DemoPreview /></LazyScreen>} />
@@ -96,6 +113,8 @@ export default function App() {
                                 <Route path="sales" element={<LazyScreen><AdminSales /></LazyScreen>} />
                                 <Route path="plans" element={<LazyScreen><AdminPlans /></LazyScreen>} />
                                 <Route path="settings" element={<LazyScreen><AdminSettingsPage /></LazyScreen>} />
+                                <Route path="cms" element={<LazyScreen><AdminCMS /></LazyScreen>} />
+                                <Route path="roles" element={<LazyScreen><AdminRoles /></LazyScreen>} />
                                 <Route index element={<Navigate to="dashboard" replace />} />
                             </Route>
 

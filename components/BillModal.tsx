@@ -1,5 +1,5 @@
-import React from 'react';
-import { Copy, Download, Mail, MessageCircle, Printer, QrCode, Send, Share2, X } from 'lucide-react';
+import React, { useState } from 'react';
+import { Copy, Download, Mail, MessageCircle, Printer, QrCode, Send, Share2, X, CheckCircle } from 'lucide-react';
 import { formatCurrency, useApp } from '../AppContext';
 import { buildBillDocumentHtml, buildBillShareText, buildBillTransferContent } from '../utils/paymentBills';
 import type { RoomBill } from '../utils/paymentBills';
@@ -30,6 +30,12 @@ function openHtmlWindow(html: string, autoPrint = false): void {
 
 export default function BillModal({ bill, onClose }: BillModalProps) {
     const { bankInfo } = useApp();
+    const [toastMessage, setToastMessage] = useState('');
+
+    const showToast = (msg: string) => {
+        setToastMessage(msg);
+        setTimeout(() => setToastMessage(''), 3000);
+    };
 
     const shareText = React.useMemo(() => buildBillShareText(bill, bankInfo), [bill, bankInfo]);
     const documentHtml = React.useMemo(() => buildBillDocumentHtml(bill, bankInfo), [bill, bankInfo]);
@@ -43,13 +49,13 @@ export default function BillModal({ bill, onClose }: BillModalProps) {
         try {
             await navigator.clipboard.writeText(shareText);
             if (showAlert) {
-                alert('Đã sao chép nội dung bill để gửi cho khách.');
+                showToast('Đã sao chép nội dung bill để gửi cho khách.');
             }
             return true;
         } catch (error) {
             console.error('Copy bill text failed', error);
             if (showAlert) {
-                alert('Không sao chép được nội dung bill trên trình duyệt này.');
+                showToast('Không sao chép được nội dung bill trên trình duyệt này.');
             }
             return false;
         }
@@ -80,13 +86,22 @@ export default function BillModal({ bill, onClose }: BillModalProps) {
         window.location.href = `mailto:?subject=${subject}&body=${body}`;
     };
 
-    const handleOpenChannel = async (url: string, label: string) => {
+    const handleOpenChannel = async (channel: 'zalo' | 'messenger') => {
         const copied = await copyBillText(false);
+        let url = '';
+        
+        if (channel === 'zalo') {
+            const phone = bill.customers[0]?.phone?.replace(/\D/g, '');
+            url = phone ? `https://zalo.me/${phone}` : 'https://zalo.me/';
+        } else {
+            url = 'https://www.messenger.com/';
+        }
+        
         window.open(url, '_blank', 'noopener,noreferrer');
-        alert(
+        showToast(
             copied
-                ? `Đã sao chép bill. Tiếp tục dán nội dung vào ${label} để gửi cho khách.`
-                : `Không sao chép được tự động. Hãy mở ${label} rồi gửi bill thủ công.`,
+                ? `Đã sao chép bill. Tiếp tục dán vào ${channel === 'zalo' ? 'Zalo' : 'Messenger'} để gửi.`
+                : `Không tự động sao chép được. Mở ${channel === 'zalo' ? 'Zalo' : 'Messenger'} rồi gửi thủ công.`
         );
     };
 
@@ -274,7 +289,7 @@ export default function BillModal({ bill, onClose }: BillModalProps) {
                                     </button>
                                     <button
                                         type="button"
-                                        onClick={() => handleOpenChannel('https://zalo.me/', 'Zalo')}
+                                        onClick={() => handleOpenChannel('zalo')}
                                         className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 dark:border-slate-700 dark:text-slate-200"
                                     >
                                         <MessageCircle className="h-4 w-4" />
@@ -282,7 +297,7 @@ export default function BillModal({ bill, onClose }: BillModalProps) {
                                     </button>
                                     <button
                                         type="button"
-                                        onClick={() => handleOpenChannel('https://www.messenger.com/', 'Messenger')}
+                                        onClick={() => handleOpenChannel('messenger')}
                                         className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 dark:border-slate-700 dark:text-slate-200"
                                     >
                                         <MessageCircle className="h-4 w-4" />
@@ -329,6 +344,13 @@ export default function BillModal({ bill, onClose }: BillModalProps) {
                     </button>
                 </div>
             </div>
+
+            {toastMessage && (
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-slate-800/90 px-6 py-3 text-sm font-medium text-white shadow-xl backdrop-blur-md dark:bg-slate-100/90 dark:text-slate-900 z-[70] flex items-center gap-2 animate-in slide-in-from-bottom-5">
+                    <CheckCircle className="h-4 w-4 text-emerald-400 dark:text-emerald-600" />
+                    {toastMessage}
+                </div>
+            )}
         </div>
     );
 }

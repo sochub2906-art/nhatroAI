@@ -11,6 +11,7 @@ import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { initializeFirestore } from 'firebase/firestore';
 import { getAnalytics, isSupported } from 'firebase/analytics';
+import { getMessaging } from 'firebase/messaging';
 
 const firebaseConfig = {
     apiKey: "AIzaSyCkJSeFyvQf2q1PwXSxY0livfT8of6T2rA",
@@ -25,12 +26,12 @@ const firebaseConfig = {
 // Initialize Firebase
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
+export const messaging = typeof window !== 'undefined' ? getMessaging(app) : null;
 export const db = initializeFirestore(app, {
     experimentalAutoDetectLongPolling: true,
 }, 'nhatroai');
 
 // Secondary app for creating users without affecting current admin auth session
-// createUserWithEmailAndPassword auto-signs-in as the new user — this prevents that
 const secondaryApp = initializeApp(firebaseConfig, 'secondary');
 export const secondaryAuth = getAuth(secondaryApp);
 

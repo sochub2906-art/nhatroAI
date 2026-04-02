@@ -58,3 +58,12 @@ table {
         grid-template-columns: minmax(0, 1fr);
     }
 }
+
+/* Hide scrollbar for horizontal scroll carousels */
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}

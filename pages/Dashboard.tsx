@@ -44,75 +44,55 @@ export default function Dashboard() {
 
     return (
         <div className="space-y-6">
-            <div>
-                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Tổng quan host</h2>
-                <p className="text-sm text-slate-500 dark:text-slate-400">
-                    Theo dõi doanh thu ngày, tháng, năm, chi phí vận hành và trạng thái lấp đầy ngay trên một màn hình.
-                </p>
-            </div>
-
-            <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                <div className="mb-4">
-                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Tác vụ nhanh</h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">Đưa các thao tác hay dùng lên đầu để thao tác ngay khi vào dashboard.</p>
+            <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                <div>
+                    <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Tổng quan host</h2>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                        Theo dõi doanh thu ngày, tháng, năm, chi phí vận hành và trạng thái lấp đầy ngay trên một màn hình.
+                    </p>
                 </div>
-                <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-5">
+
+                <div className="flex flex-wrap gap-2">
                     <button
                         onClick={() => setIsBulkReadingOpen(true)}
-                        className="flex items-center justify-between rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-left transition hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/30 dark:hover:bg-amber-950/50"
+                        className="inline-flex items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-medium text-amber-700 transition hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300"
                     >
-                        <div>
-                            <div className="font-medium text-amber-700 dark:text-amber-300">Ghi số điện nước theo lô</div>
-                            <div className="text-sm text-amber-700/80 dark:text-amber-300/80">Nhập chỉ số cũ, mới và lưu toàn bộ phòng trong một lần</div>
-                        </div>
-                        <Gauge className="h-5 w-5 text-amber-600 dark:text-amber-300" />
+                        <Gauge className="h-4 w-4" />
+                        Ghi số điện nước theo lô
                     </button>
-
                     <button
                         onClick={() => setIsWizardOpen(true)}
-                        className="flex items-center justify-between rounded-2xl border border-blue-200 bg-blue-50 px-4 py-4 text-left transition hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-950/30 dark:hover:bg-blue-950/50"
+                        className="inline-flex items-center gap-2 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-medium text-blue-700 transition hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-300"
                     >
-                        <div>
-                            <div className="font-medium text-blue-700 dark:text-blue-300">Tạo khách & hợp đồng</div>
-                            <div className="text-sm text-blue-600/80 dark:text-blue-300/80">Thêm người thuê mới bằng QR CCCD</div>
-                        </div>
-                        <ArrowRight className="h-5 w-5 text-blue-600 dark:text-blue-300" />
+                        <ArrowRight className="h-4 w-4" />
+                        Tạo khách & hợp đồng nhanh
                     </button>
-
                     <button
                         onClick={generateMonthlyPayments}
-                        className="flex items-center justify-between rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-left transition hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/30 dark:hover:bg-emerald-950/50"
+                        className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-blue-600/20 transition hover:from-blue-700 hover:to-indigo-700"
                     >
-                        <div>
-                            <div className="font-medium text-emerald-700 dark:text-emerald-300">Tạo phiếu thu tháng</div>
-                            <div className="text-sm text-emerald-600/80 dark:text-emerald-300/80">Sinh công nợ kỳ tiếp theo</div>
-                        </div>
-                        <Wallet className="h-5 w-5 text-emerald-600 dark:text-emerald-300" />
+                        <Wallet className="h-4 w-4" />
+                        Tạo phiếu thu tháng này
                     </button>
-
-                    <Link
-                        to="/app/customers"
-                        className="flex items-center justify-between rounded-2xl border border-violet-200 bg-violet-50 px-4 py-4 transition hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-950/30 dark:hover:bg-violet-950/50"
-                    >
-                        <div>
-                            <div className="font-medium text-violet-700 dark:text-violet-300">CT01 cư trú PDF</div>
-                            <div className="text-sm text-violet-600/80 dark:text-violet-300/80">Mở danh sách khách để in hoặc lưu PDF mẫu công an</div>
-                        </div>
-                        <FileText className="h-5 w-5 text-violet-600 dark:text-violet-300" />
-                    </Link>
-
-                    <Link
-                        to="/app/equipment"
-                        className="flex items-center justify-between rounded-2xl border border-slate-200 px-4 py-4 transition hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800"
-                    >
-                        <div>
-                            <div className="font-medium text-slate-900 dark:text-white">Quản lý tài sản</div>
-                            <div className="text-sm text-slate-500 dark:text-slate-400">Theo dõi sửa chữa, định giá lại và khấu hao</div>
-                        </div>
-                        <Wrench className="h-5 w-5 text-slate-500" />
-                    </Link>
                 </div>
-            </section>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+                <Link
+                    to="/app/customers"
+                    className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                >
+                    <FileText className="h-4 w-4 text-violet-500" />
+                    CT01 cư trú PDF
+                </Link>
+                <Link
+                    to="/app/equipment"
+                    className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                >
+                    <Wrench className="h-4 w-4 text-slate-500" />
+                    Quản lý tài sản
+                </Link>
+            </div>
 
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {overviewCards.map(card => {

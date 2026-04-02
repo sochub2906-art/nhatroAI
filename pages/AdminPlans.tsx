@@ -45,6 +45,11 @@ export default function AdminPlans() {
     const { pricingTiers, allUsers, addPricingTier, updatePricingTier, deletePricingTier, adminSettings, updateAdminSettings } = useApp();
     const hosts = allUsers.filter(user => user.role === 'HOST');
     const addons = adminSettings?.addons || [];
+    
+    // Split tiers
+    const basicTiers = pricingTiers.filter(t => !t.isCustom);
+    const customTiers = pricingTiers.filter(t => t.isCustom);
+
     const [modalMode, setModalMode] = useState<'create' | 'edit' | null>(null);
     const [editingTier, setEditingTier] = useState<Partial<PricingTier> | null>(null);
     const [addonForm, setAddonForm] = useState<Partial<AddOnFeature> | null>(null);
@@ -100,14 +105,15 @@ export default function AdminPlans() {
                     <CreditCard size={24} className="text-purple-500" />
                     {COPY.pageTitle}
                 </h1>
-                <button onClick={openCreate} className="flex items-center gap-2 rounded-xl bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700">
+                <button onClick={openCreate} className="flex items-center gap-2 rounded-xl bg-purple-600 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-purple-600/20 hover:bg-purple-700">
                     <Plus size={16} />
                     {COPY.createPlan}
                 </button>
             </div>
 
+            {/* BASIC TIERS */}
             <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                {pricingTiers.map((tier, index) => {
+                {basicTiers.map((tier, index) => {
                     const subscribedHosts = hosts.filter(host => host.subscriptionPlanId === tier.id);
                     const flags = tier.featureFlags || DEFAULT_FEATURE_FLAGS;
                     return (
@@ -180,6 +186,47 @@ export default function AdminPlans() {
                 })}
             </div>
 
+            {/* CUSTOM TIERS (LIST VIEW) */}
+            {customTiers.length > 0 && (
+                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 mt-2">
+                    <div className="border-b border-slate-100 p-5 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex items-center justify-between">
+                        <h2 className="text-lg font-bold flex items-center gap-2"><CreditCard size={20} className="text-blue-500" /> Gói Đặc Thù (Chỉ định Host)</h2>
+                    </div>
+                    <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                        {customTiers.map(tier => {
+                            const targetHost = hosts.find(h => h.id === tier.targetHostId);
+                            const isActiveHost = targetHost?.subscriptionPlanId === tier.id;
+                            return (
+                                <div key={tier.id} className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition">
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <h4 className="font-bold text-slate-900 dark:text-white">{tier.name}</h4>
+                                            <span className="text-[10px] bg-blue-100 text-blue-700 px-2.5 py-0.5 rounded-full uppercase font-bold tracking-wider dark:bg-blue-900/40 dark:text-blue-400">Custom</span>
+                                        </div>
+                                        <div className="text-sm text-slate-500 mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1">
+                                            <span className="font-semibold text-slate-700 dark:text-slate-300">{formatCurrency(tier.price)}<span className="font-normal text-slate-400">/tháng</span></span>
+                                            <span>• {tier.maxBuildings} Tòa | {tier.maxRooms} Phòng</span>
+                                            {targetHost ? (
+                                                <span className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
+                                                    • Cấp cho: <span className="font-medium bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">{targetHost.name}</span>
+                                                    {isActiveHost ? <Check size={14} className="text-green-500" /> : <span className="text-xs text-amber-500">(Chưa áp dụng)</span>}
+                                                </span>
+                                            ) : (
+                                                <span className="text-amber-500">• Chưa gắn Host</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2 shrink-0 border-t border-slate-100 md:border-0 pt-3 md:pt-0 dark:border-slate-800">
+                                        <button onClick={() => openEdit(tier)} className="px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 dark:text-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700">Sửa</button>
+                                        <button onClick={() => window.confirm(`${COPY.deletePlanConfirmPrefix} "${tier.name}"?`) && deletePricingTier(tier.id)} className="px-4 py-2 text-sm font-medium text-red-600 bg-red-50 border border-red-100 rounded-xl hover:bg-red-100 dark:text-red-400 dark:border-red-900/30 dark:bg-red-900/10 dark:hover:bg-red-900/30">Xóa</button>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
             <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
                 <div className="flex items-center justify-between border-b border-slate-100 p-6 dark:border-slate-800">
                     <h2 className="flex items-center gap-2 text-lg font-bold"><Puzzle size={20} className="text-amber-500" />{COPY.addons}</h2>
@@ -238,6 +285,22 @@ export default function AdminPlans() {
                             <button onClick={() => setModalMode(null)} className="p-1 text-slate-400 hover:text-slate-600"><X size={20} /></button>
                         </div>
                         <form onSubmit={saveTier} className="space-y-4 p-6">
+                            <div className="mb-4 p-4 rounded-xl border border-slate-100 bg-slate-50 dark:bg-slate-800/30 dark:border-slate-800">
+                                <label className="flex items-center gap-2 text-sm font-medium cursor-pointer text-blue-700 dark:text-blue-400">
+                                    <input type="checkbox" checked={editingTier.isCustom || false} onChange={e => setEditingTier(prev => ({ ...prev!, isCustom: e.target.checked, targetHostId: e.target.checked ? (prev?.targetHostId || hosts[0]?.id) : undefined }))} className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 dark:border-slate-600" />
+                                    Là gói đặc thù cấp cho một Host
+                                </label>
+                                {editingTier.isCustom && (
+                                    <div className="mt-3">
+                                        <label className="block text-xs mb-1.5 text-slate-500">Chỉ định Host áp dụng</label>
+                                        <select className="w-full rounded-xl border border-blue-200 bg-white p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-900 dark:border-blue-900/50" value={editingTier.targetHostId || ''} onChange={e => setEditingTier(prev => ({ ...prev!, targetHostId: e.target.value }))}>
+                                            <option value="">-- Chọn Host --</option>
+                                            {hosts.map(h => <option key={h.id} value={h.id}>{h.name} ({h.email})</option>)}
+                                        </select>
+                                    </div>
+                                )}
+                            </div>
+
                             <div className="grid grid-cols-2 gap-4">
                                 <input required className="w-full rounded-xl border border-slate-300 bg-slate-50 p-2.5 outline-none focus:ring-2 focus:ring-purple-500 dark:border-slate-700 dark:bg-slate-800" value={editingTier.name || ''} onChange={e => setEditingTier({ ...editingTier, name: e.target.value })} placeholder={COPY.planName} />
                                 <input type="number" required className="w-full rounded-xl border border-slate-300 bg-slate-50 p-2.5 outline-none focus:ring-2 focus:ring-purple-500 dark:border-slate-700 dark:bg-slate-800" value={editingTier.price || 0} onChange={e => setEditingTier({ ...editingTier, price: +e.target.value })} placeholder={COPY.monthlyPrice} />

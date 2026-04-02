@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { useApp, formatCurrency } from '../AppContext';
 import { Building, Users, CreditCard, MapPin, ExternalLink, Search, Plus, X, Loader2, FileSpreadsheet } from 'lucide-react';
 import HostDetailModal from '../components/HostDetailModal';
-import { AppUser, UserRole } from '../types';
+import { AppUser, UserRole, ALL_FEATURE_KEYS, DEFAULT_FEATURE_FLAGS, FeatureFlags } from '../types';
 
 export default function AdminHosts() {
-    const { allUsers, addUser, updatePricingTier, addPricingTier, createGoogleSheetForHost, buildings, rooms, contracts, payments, pricingTiers } = useApp();
+    const { allUsers, addUser, updatePricingTier, addPricingTier, createGoogleSheetForHost, buildings, rooms, contracts, payments, pricingTiers, adminSettings, updateAdminSettings } = useApp();
     const [selectedHostId, setSelectedHostId] = useState<string | null>(null);
     const [search, setSearch] = useState('');
 
@@ -13,13 +13,17 @@ export default function AdminHosts() {
     const [showModal, setShowModal] = useState(false);
     const [form, setForm] = useState({ name: '', email: '', phone: '', defaultPassword: '', subscriptionPlanId: '' });
     const [isCustomPlan, setIsCustomPlan] = useState(false);
-    const [customPlan, setCustomPlan] = useState({ name: 'Gói tùy chỉnh', price: 0, maxBuildings: 1, maxRooms: 10, features: ['Core features'] });
+    const [customPlan, setCustomPlan] = useState({ name: 'Gói tùy chỉnh', price: 0, maxBuildings: 1, maxRooms: 10, features: ['Core features'], featureFlags: { ...DEFAULT_FEATURE_FLAGS } });
     const [creatingSheetFor, setCreatingSheetFor] = useState<string | null>(null);
+
+    const toggleCustomFlag = (key: keyof FeatureFlags) => {
+        setCustomPlan(prev => ({ ...prev, featureFlags: { ...prev.featureFlags, [key]: !prev.featureFlags[key] } }));
+    };
 
     const openCreate = () => {
         setForm({ name: '', email: '', phone: '', defaultPassword: '', subscriptionPlanId: '' });
         setIsCustomPlan(false);
-        setCustomPlan({ name: 'Gói tùy chỉnh', price: 0, maxBuildings: 1, maxRooms: 10, features: ['Core features'] });
+        setCustomPlan({ name: 'Gói đặc thù', price: 0, maxBuildings: 1, maxRooms: 10, features: ['Các tính năng lõi cơ bản'], featureFlags: { ...DEFAULT_FEATURE_FLAGS } });
         setShowModal(true);
     };
 
@@ -41,10 +45,10 @@ export default function AdminHosts() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         let planId = form.subscriptionPlanId;
+        const newTierId = `tier_custom_${Date.now()}`;
 
         if (isCustomPlan) {
-            planId = `tier_custom_${Date.now()}`;
-            addPricingTier({ ...customPlan, name: `${customPlan.name} - ${form.name}` });
+            planId = newTierId;
         }
 
         if (!form.defaultPassword) {
@@ -65,6 +69,21 @@ export default function AdminHosts() {
 
         const newUser = await addUser(newUserReq);
         if (newUser && newUser.role === 'HOST' && newUser.status === 'active') {
+            if (isCustomPlan) {
+                // Must manually inject it into settings so we can preserve exactly `newTierId`
+                // because addPricingTier ignores explicit ID.
+                const newCustomTier = {
+                     id: newTierId,
+                     ...customPlan,
+                     name: `${customPlan.name} (${form.name})`,
+                     isCustom: true,
+                     targetHostId: newUser.id
+                };
+                updateAdminSettings({ 
+                    ...adminSettings!, 
+                    pricingTiers: [...(adminSettings?.pricingTiers || []), newCustomTier] 
+                });
+            }
             handleCreateSheet(newUser.id);
         }
         setShowModal(false);
@@ -213,18 +232,31 @@ export default function AdminHosts() {
                                         {pricingTiers.filter(t => !t.name.includes(' - ')).map(t => <option key={t.id} value={t.id}>{t.name} — {t.price > 0 ? `${t.price.toLocaleString()}đ/th` : 'Miễn phí'}</option>)}
                                     </select>
                                 ) : (
-                                    <div className="grid grid-cols-2 gap-3 pt-2">
-                                        <div>
-                                            <label className="block text-xs text-slate-500 mb-1">Giá gói (VNĐ/tháng)</label>
-                                            <input type="number" className="w-full p-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none text-sm" value={customPlan.price} onChange={e => setCustomPlan({ ...customPlan, price: +e.target.value })} />
+                                    <div className="pt-2">
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                            <div>
+                                                <label className="block text-xs text-slate-500 mb-1">Giá gói (VNĐ/tháng)</label>
+                                                <input type="number" className="w-full p-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none text-sm focus:ring-2 focus:ring-blue-500" value={customPlan.price} onChange={e => setCustomPlan({ ...customPlan, price: +e.target.value })} />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs text-slate-500 mb-1">Tối đa tòa nhà</label>
+                                                <input type="number" min={1} className="w-full p-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none text-sm focus:ring-2 focus:ring-blue-500" value={customPlan.maxBuildings} onChange={e => setCustomPlan({ ...customPlan, maxBuildings: +e.target.value })} />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs text-slate-500 mb-1">Tối đa phòng</label>
+                                                <input type="number" min={1} className="w-full p-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none text-sm focus:ring-2 focus:ring-blue-500" value={customPlan.maxRooms} onChange={e => setCustomPlan({ ...customPlan, maxRooms: +e.target.value })} />
+                                            </div>
                                         </div>
-                                        <div>
-                                            <label className="block text-xs text-slate-500 mb-1">Tối đa tòa nhà</label>
-                                            <input type="number" className="w-full p-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none text-sm" value={customPlan.maxBuildings} onChange={e => setCustomPlan({ ...customPlan, maxBuildings: +e.target.value })} />
-                                        </div>
-                                        <div className="col-span-2">
-                                            <label className="block text-xs text-slate-500 mb-1">Tối đa phòng</label>
-                                            <input type="number" className="w-full p-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none text-sm" value={customPlan.maxRooms} onChange={e => setCustomPlan({ ...customPlan, maxRooms: +e.target.value })} />
+                                        <div className="mt-3 border-t border-slate-200 dark:border-slate-700 pt-3">
+                                            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-2">Quyền truy cập tính năng cơ bản</label>
+                                            <div className="grid grid-cols-2 gap-y-2 gap-x-4">
+                                                {ALL_FEATURE_KEYS.map(({ key, label }) => (
+                                                    <label key={key} className="flex items-center gap-2 text-[11px] text-slate-700 dark:text-slate-300 cursor-pointer">
+                                                        <input type="checkbox" checked={customPlan.featureFlags[key]} onChange={() => toggleCustomFlag(key)} className="rounded text-blue-600 focus:ring-blue-500 w-3.5 h-3.5" />
+                                                        <span className="truncate">{label}</span>
+                                                    </label>
+                                                ))}
+                                            </div>
                                         </div>
                                     </div>
                                 )}

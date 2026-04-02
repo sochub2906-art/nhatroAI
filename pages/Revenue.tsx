@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { ArrowLeft, Building2, Download, ExternalLink, ReceiptText, RefreshCw, TrendingUp, Wallet } from 'lucide-react';
+import { ArrowLeft, Building2, Download, ExternalLink, ReceiptText, RefreshCw, TrendingUp, Wallet, X, Calendar, ChevronRight, Info } from 'lucide-react';
 import { formatCurrency, useApp } from '../AppContext';
 import { createHostFinancialSnapshot } from '../utils/hostAnalytics';
 
@@ -20,7 +20,11 @@ function parseDate(value?: string) {
 }
 
 export default function Revenue() {
-    const { payments, contracts, rooms, buildings, equipment, syncNow, isSyncing, currentUser } = useApp();
+    const { payments, contracts, rooms, buildings, equipment, customers, syncNow, isSyncing, currentUser } = useApp();
+
+    const [selectedPeriod, setSelectedPeriod] = React.useState<'day' | 'month' | 'year' | null>(null);
+    const [showExportModal, setShowExportModal] = React.useState(false);
+    const [exportDateRange, setExportDateRange] = React.useState({ start: '', end: '' });
 
     const snapshot = React.useMemo(
         () => createHostFinancialSnapshot({ rooms, contracts, payments, buildings, equipment }),
@@ -30,6 +34,7 @@ export default function Revenue() {
     const contractMap = React.useMemo(() => new Map(contracts.map(contract => [contract.id, contract])), [contracts]);
     const roomMap = React.useMemo(() => new Map(rooms.map(room => [room.id, room])), [rooms]);
     const buildingMap = React.useMemo(() => new Map(buildings.map(building => [building.id, building])), [buildings]);
+    const customerMap = React.useMemo(() => new Map(customers.map(c => [c.id, c])), [customers]);
 
     const monthlyData = React.useMemo(() => {
         const months = Array.from({ length: 12 }, (_, index) => {
@@ -78,37 +83,58 @@ export default function Revenue() {
         return Array.from(roomTotals.values()).sort((left, right) => right.income - left.income);
     }, [buildingMap, contractMap, payments, roomMap]);
 
-    const handleDownloadCSV = () => {
+    const handleDownloadCustomCSV = () => {
+        if (!exportDateRange.start || !exportDateRange.end) return;
+        const startDate = new Date(exportDateRange.start);
+        startDate.setHours(0, 0, 0, 0);
+        const endDate = new Date(exportDateRange.end);
+        endDate.setHours(23, 59, 59, 999);
+
+        const filteredPayments = payments.filter(p => {
+            if (p.status !== 'Đã đóng' || (p.direction || 'income') !== 'income') return false;
+            const pd = parseDate(p.paidDate || p.sourceDate || p.dueDate);
+            if (!pd) return false;
+            return pd >= startDate && pd <= endDate;
+        });
+
         const BOM = '\uFEFF';
-        let csvContent = BOM + 'LOẠI DỮ LIỆU,MÃ CỘT,TÊN/PHÒNG,DOANH THU ĐÃ THU,CÔNG NỢ,SỐ BILL\n';
+        let csvContent = BOM + 'MÃ HÓA ĐƠN,NGƯỜI ĐÓNG,PHÒNG,NỘI DUNG,NGÀY ĐÓNG,SỐ TIỀN\n';
+        let total = 0;
 
-        // Monthly data section
-        csvContent += 'DOANH THU THÁNG,,,,,\n';
-        monthlyData.forEach(month => {
-            csvContent += `THÁNG,${month.key},${month.label},${month.income},${month.debt},\n`;
-        });
+        filteredPayments.forEach(payment => {
+            const contract = contractMap.get(payment.contractId);
+            const room = contract ? roomMap.get(contract.roomId) : undefined;
+            const customer = contract ? customerMap.get(contract.customerId) : undefined;
+            const building = room ? buildingMap.get(room.buildingId) : undefined;
 
-        // Room revenue section
-        csvContent += ',\nDOANH THU PHÒNG,,,,,\n';
-        roomRevenueRows.forEach(row => {
-            csvContent += `PHÒNG,,${row.roomLabel.replace(/,/g, ' ')},${row.income},${row.debt},${row.billCount}\n`;
+            const roomName = room ? `${building?.name || 'Tòa nhà'} - ${room.name}` : '-';
+            const customerName = customer ? customer.name.replace(/,/g, ' ') : '-';
+            const dateStr = payment.paidDate || payment.sourceDate || payment.dueDate || '';
+            const amount = payment.paidAmount || payment.amount;
+            const desc = (payment.description || '').replace(/,/g, ' ') || 'Thu tiền';
+            total += amount;
+
+            csvContent += `${payment.id || payment.billId || '-'},"${customerName}","${roomName}","${desc}","${dateStr}",${amount}\n`;
         });
+        
+        csvContent += `\nTỔNG CỘNG,,,,,${total}\n`;
 
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
         link.setAttribute('href', url);
-        link.setAttribute('download', `SmartRental_DoanhThu_${new Date().toISOString().split('T')[0]}.csv`);
+        link.setAttribute('download', `SmartRental_DoanhThu_${exportDateRange.start}_${exportDateRange.end}.csv`);
         link.style.visibility = 'hidden';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        setShowExportModal(false);
     };
 
     const summaryCards = [
-        { label: 'Thu hôm nay', value: formatCurrency(snapshot.income.day), helper: 'Tiền đã ghi nhận trong ngày', icon: TrendingUp },
-        { label: 'Thu tháng này', value: formatCurrency(snapshot.income.month), helper: 'So với công nợ đang mở', icon: ReceiptText },
-        { label: 'Thu năm nay', value: formatCurrency(snapshot.income.year), helper: 'Dòng tiền đã thu theo năm', icon: Wallet },
+        { label: 'Thu hôm nay', value: formatCurrency(snapshot.income.day), helper: 'Tiền đã ghi nhận trong ngày', icon: TrendingUp, period: 'day' as const },
+        { label: 'Thu tháng này', value: formatCurrency(snapshot.income.month), helper: 'So với công nợ đang mở', icon: ReceiptText, period: 'month' as const },
+        { label: 'Thu năm nay', value: formatCurrency(snapshot.income.year), helper: 'Dòng tiền đã thu theo năm', icon: Wallet, period: 'year' as const },
         { label: 'Tổng doanh thu', value: formatCurrency(snapshot.income.total), helper: `${roomRevenueRows.length} phòng có phát sinh`, icon: Building2 },
     ];
 
@@ -136,9 +162,9 @@ export default function Revenue() {
                             Mở Google Sheet
                         </a>
                     )}
-                    <button type="button" onClick={() => handleDownloadCSV()} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+                    <button type="button" onClick={() => setShowExportModal(true)} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
                         <Download className="h-4 w-4" />
-                        Tải xuống CSV
+                        Tải bảng kê chi tiết
                     </button>
                 </div>
             </div>
@@ -147,13 +173,21 @@ export default function Revenue() {
                 {summaryCards.map(card => {
                     const Icon = card.icon;
                     return (
-                        <div key={card.label} className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                            <div className="inline-flex rounded-2xl bg-blue-50 p-3 text-blue-600 dark:bg-blue-950/30 dark:text-blue-300">
-                                <Icon className="h-5 w-5" />
+                        <div key={card.label} className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 flex flex-col justify-between">
+                            <div>
+                                <div className="inline-flex rounded-2xl bg-blue-50 p-3 text-blue-600 dark:bg-blue-950/30 dark:text-blue-300">
+                                    <Icon className="h-5 w-5" />
+                                </div>
+                                <div className="mt-4 text-sm text-slate-500 dark:text-slate-400">{card.label}</div>
+                                <div className="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">{card.value}</div>
+                                <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">{card.helper}</div>
                             </div>
-                            <div className="mt-4 text-sm text-slate-500 dark:text-slate-400">{card.label}</div>
-                            <div className="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">{card.value}</div>
-                            <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">{card.helper}</div>
+                            {card.period && (
+                                <button onClick={() => setSelectedPeriod(card.period)} className="mt-4 flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600 transition hover:bg-slate-100 dark:bg-slate-800/50 dark:text-slate-300 dark:hover:bg-slate-800">
+                                    <span className="flex items-center gap-1.5"><Info className="h-3.5 w-3.5" /> Xem chi tiết</span>
+                                    <ChevronRight className="h-3.5 w-3.5" />
+                                </button>
+                            )}
                         </div>
                     );
                 })}
@@ -241,6 +275,107 @@ export default function Revenue() {
                     </div>
                 </section>
             </div>
+
+            {selectedPeriod && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
+                    <div className="w-full max-w-2xl rounded-3xl bg-white shadow-2xl dark:bg-slate-900 flex flex-col max-h-[90vh]">
+                        <div className="flex items-center justify-between border-b border-slate-100 p-6 dark:border-slate-800 shrink-0">
+                            <div>
+                                <h3 className="text-xl font-bold text-slate-900 dark:text-white">
+                                    Chi tiết doanh thu {selectedPeriod === 'day' ? 'hôm nay' : selectedPeriod === 'month' ? 'tháng này' : 'năm nay'}
+                                </h3>
+                                <p className="text-sm text-slate-500 dark:text-slate-400">Danh sách các khoản thanh toán đã đóng trong kỳ.</p>
+                            </div>
+                            <button onClick={() => setSelectedPeriod(null)} className="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300 transition">
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+                        <div className="p-6 overflow-y-auto flex-1">
+                            {snapshot.income.rawPayments[selectedPeriod].length === 0 ? (
+                                <div className="text-center py-10 text-slate-500 dark:text-slate-400">
+                                    Không có giao dịch nào trong kỳ này.
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {snapshot.income.rawPayments[selectedPeriod].map(payment => {
+                                        const contract = contractMap.get(payment.contractId);
+                                        const room = contract ? roomMap.get(contract.roomId) : undefined;
+                                        const customer = contract ? customerMap.get(contract.customerId) : undefined;
+                                        const dateStr = payment.paidDate || payment.sourceDate || payment.dueDate || '';
+                                        const amount = payment.paidAmount || payment.amount;
+
+                                        return (
+                                            <div key={payment.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl bg-slate-50 p-4 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50">
+                                                <div>
+                                                    <div className="font-semibold text-slate-900 dark:text-white">{customer?.name || 'Khách không xác định'}</div>
+                                                    <div className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-1">
+                                                        <span className="font-medium text-slate-700 dark:text-slate-300">Phòng {room?.name || '???'}</span>
+                                                        <span>•</span>
+                                                        <span>{dateStr.split('T')[0]}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="text-left sm:text-right">
+                                                    <div className="font-bold text-blue-600 dark:text-blue-400">{formatCurrency(amount)}</div>
+                                                    {payment.description && <div className="text-xs text-slate-500 mt-1 line-clamp-1 max-w-[200px]">{payment.description}</div>}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                        <div className="p-6 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50 rounded-b-3xl shrink-0">
+                            <span className="text-sm font-medium text-slate-500">Tổng cộng:</span>
+                            <span className="text-xl font-bold text-slate-900 dark:text-white">
+                                {formatCurrency(snapshot.income.rawPayments[selectedPeriod].reduce((sum, p) => sum + (p.paidAmount || p.amount), 0))}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showExportModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
+                    <div className="w-full max-w-md rounded-3xl bg-white shadow-2xl dark:bg-slate-900 p-6">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-white">Tải báo cáo doanh thu</h3>
+                            <button onClick={() => setShowExportModal(false)} className="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300 transition">
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+                        
+                        <div className="flex flex-col gap-4 mb-8">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Từ ngày</label>
+                                <input 
+                                    type="date" 
+                                    value={exportDateRange.start} 
+                                    onChange={e => setExportDateRange(prev => ({ ...prev, start: e.target.value }))}
+                                    className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Đến ngày</label>
+                                <input 
+                                    type="date" 
+                                    value={exportDateRange.end} 
+                                    onChange={e => setExportDateRange(prev => ({ ...prev, end: e.target.value }))}
+                                    className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end gap-3">
+                            <button onClick={() => setShowExportModal(false)} className="px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-xl transition dark:text-slate-300 dark:hover:bg-slate-800">
+                                Hủy bỏ
+                            </button>
+                            <button onClick={handleDownloadCustomCSV} disabled={!exportDateRange.start || !exportDateRange.end} className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition flex items-center gap-2">
+                                <Download size={16} /> Xuất CSV
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

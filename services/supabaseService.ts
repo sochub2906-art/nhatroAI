@@ -9,7 +9,7 @@
 import { supabase } from '../supabase';
 import type {
     PricingTier, AdminSettings, AppUser, FeatureFlags,
-    Building, Room, Customer, Contract, Payment, Equipment, ServiceRecord, HostSubscriptionSnapshot
+    Building, Room, Customer, Contract, Payment, Equipment, ServiceRecord, HostSubscriptionSnapshot, CmsPage
 } from '../types';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
@@ -94,11 +94,15 @@ function settingsToRow(s: AdminSettings): Record<string, any> {
         sales_email: s.salesEmail || '',
         google_sheet_webhook_url: s.googleSheetWebhookUrl || null,
         landing_background_url: s.landingBackgroundUrl || null,
+        logo_url: s.logoUrl || null,
+        favicon_url: s.faviconUrl || null,
+        company_info: s.companyInfo || {},
         email_templates: s.emailTemplates || {},
         sales_team_emails: s.salesTeamEmails || [],
         payment_config: s.paymentConfig || {},
         addons: s.addons || [],
         subscription_requests: s.subscriptionRequests || [],
+        role_permissions: s.rolePermissions || {},
         updated_at: new Date().toISOString(),
     };
 }
@@ -109,11 +113,15 @@ function rowToSettings(row: any): AdminSettings {
         salesEmail: row.sales_email || '',
         googleSheetWebhookUrl: row.google_sheet_webhook_url,
         landingBackgroundUrl: row.landing_background_url,
+        logoUrl: row.logo_url,
+        faviconUrl: row.favicon_url,
+        companyInfo: row.company_info || {},
         emailTemplates: row.email_templates,
         salesTeamEmails: row.sales_team_emails || [],
         paymentConfig: row.payment_config,
         addons: row.addons || [],
         subscriptionRequests: row.subscription_requests || [],
+        rolePermissions: row.role_permissions || {},
     };
 }
 
@@ -454,4 +462,107 @@ export function resetSnapshotCircuitBreakers(): void {
     _snapshotSaveFailCount = 0;
     _snapshotFetchDisabled = false;
     _snapshotSaveDisabled = false;
+}
+
+// ═══════════════════════════════════════
+// PUSH TOKENS
+// ═══════════════════════════════════════
+
+export async function sbSaveUserPushToken(userId: string, token: string, deviceType: string = 'web'): Promise<void> {
+    const { error } = await supabase
+        .from('user_push_tokens')
+        .upsert({
+            user_id: userId,
+            token: token,
+            device_type: deviceType,
+            updated_at: new Date().toISOString()
+        }, { onConflict: 'user_id, token' });
+
+    if (error) {
+        console.error('sbSaveUserPushToken failed:', error);
+        throw error;
+    }
+}
+
+export async function sbDeleteUserPushToken(userId: string, token: string): Promise<void> {
+    const { error } = await supabase
+        .from('user_push_tokens')
+        .delete()
+        .eq('user_id', userId)
+        .eq('token', token);
+
+    if (error) {
+        console.error('sbDeleteUserPushToken failed:', error);
+        throw error;
+    }
+}
+
+// ═══════════════════════════════════════
+// CMS PAGES
+// ═══════════════════════════════════════
+
+export async function sbGetCmsPages(): Promise<CmsPage[]> {
+    const { data, error } = await supabase
+        .from('cms_pages')
+        .select('*')
+        .order('sort_order', { ascending: true });
+
+    if (error) {
+        console.error('sbGetCmsPages failed:', error);
+        return [];
+    }
+    
+    return (data || []).map(row => ({
+        id: row.id,
+        slug: row.slug,
+        title: row.title,
+        contentHtml: row.content_html,
+        contentBlocks: row.content_blocks || [],
+        metaDescription: row.meta_description,
+        isPublished: row.is_published,
+        category: row.category,
+        sortOrder: row.sort_order,
+        updatedAt: row.updated_at,
+        createdAt: row.created_at
+    }));
+}
+
+export async function sbUpsertCmsPage(page: Partial<CmsPage> & { slug: string, title: string }): Promise<{ success: boolean; data?: any; error?: any }> {
+    const payload = {
+        ...(page.id ? { id: page.id } : {}),
+        slug: page.slug,
+        title: page.title,
+        content_html: page.contentHtml || '',
+        content_blocks: page.contentBlocks || [],
+        meta_description: page.metaDescription || '',
+        is_published: page.isPublished ?? false,
+        category: page.category || 'legal',
+        sort_order: page.sortOrder || 0,
+        updated_at: new Date().toISOString()
+    };
+
+    const { data, error } = await supabase
+        .from('cms_pages')
+        .upsert(payload, { onConflict: 'slug' })
+        .select()
+        .single();
+
+    if (error) {
+        console.error('sbUpsertCmsPage failed:', error);
+        return { success: false, error: error.message };
+    }
+    return { success: true, data };
+}
+
+export async function sbDeleteCmsPage(id: string): Promise<{ success: boolean; error?: any }> {
+    const { error } = await supabase
+        .from('cms_pages')
+        .delete()
+        .eq('id', id);
+
+    if (error) {
+        console.error('sbDeleteCmsPage failed:', error);
+        return { success: false, error: error.message };
+    }
+    return { success: true };
 }
