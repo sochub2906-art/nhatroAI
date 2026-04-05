@@ -5,6 +5,7 @@ import { useApp } from '../AppContext';
 import HostDetailModal from '../components/HostDetailModal';
 import { auth, secondaryAuth } from '../firebase';
 import type { AppUser, UserRole } from '../types';
+import SmartDateInput from '../components/SmartDateInput';
 
 const ROLE_LABELS: Record<UserRole, string> = {
     SUPER_ADMIN: 'Super Admin',
@@ -462,11 +463,11 @@ export default function AdminUsers() {
                                     <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-200 dark:border-slate-700">
                                         <div>
                                             <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Ngày bắt đầu</label>
-                                            <input type="date" lang="vi-VN" className="w-full p-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none text-sm" value={form.subscriptionStartDate} onChange={e => setForm({ ...form, subscriptionStartDate: e.target.value })} />
+                                            <SmartDateInput className="w-full p-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none text-sm" value={form.subscriptionStartDate} onChange={value => setForm({ ...form, subscriptionStartDate: value })} />
                                         </div>
                                         <div>
                                             <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Ngày hết hạn</label>
-                                            <input type="date" lang="vi-VN" className="w-full p-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none text-sm" value={form.subscriptionEndDate} onChange={e => setForm({ ...form, subscriptionEndDate: e.target.value })} />
+                                            <SmartDateInput className="w-full p-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none text-sm" value={form.subscriptionEndDate} onChange={value => setForm({ ...form, subscriptionEndDate: value })} />
                                         </div>
                                     </div>
                                 </div>

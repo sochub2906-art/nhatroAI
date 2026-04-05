@@ -144,7 +144,8 @@ interface AppContextType {
     addServiceRecord: (record: ServiceRecord) => void;
     markPaymentPaid: (id: string, amount?: number) => void;
     sendReminder: (id: string) => void;
-    generateMonthlyPayments: (period?: string) => void;
+    generateMonthlyPayments: (periodOverride?: string) => void;
+    generateRoomBill: (roomId: string, periodOverride?: string) => { length: number; period?: string } | void;
     sendBulkBills: (period: string) => void;
     updateBankInfo: (info: BankInfo) => void;
     addEquipment: (item: Equipment) => void;
@@ -1868,8 +1869,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         });
         alert(`Đã gửi nhắc nợ cho mã phiếu ${id} qua Zalo!`);
     };
-    const generateMonthlyPayments = (periodOverride?: string) => {
-        const targetPeriod = resolveTargetBillingPeriod(periodOverride);
+    const createRoomPayments = (referenceContract: Contract, targetPeriod: string, activeBillingContracts: Contract[], generatedPayments: Payment[], existingKeys: Set<string>, latestServiceRecords: Map<string, ServiceRecord>, roomSharedCategories: Set<string>, contractById: Map<string, Contract>) => {
         const parsedPeriod = parseBillingPeriod(targetPeriod) || parseBillingPeriod(getCurrentBillingPeriod()) || {
             month: new Date().getMonth() + 1,
             year: new Date().getFullYear(),
@@ -1878,6 +1878,123 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const year = String(parsedPeriod.year);
         const dueDate = `${year}-${month}-05`;
         const sourceDate = new Date().toISOString().split('T')[0];
+
+        const resolvePaymentKey = (payment: Payment) => {
+            const category = payment.category || 'other';
+            if (roomSharedCategories.has(category)) {
+                const roomId = contractById.get(payment.contractId)?.roomId || payment.contractId;
+                return `room:${roomId}:${category}:${payment.type}`;
+            }
+            if (category === 'service') {
+                return `contract:${payment.contractId}:${category}:${payment.type}:${payment.description || ''}`;
+            }
+            return `contract:${payment.contractId}:${category}:${payment.type}`;
+        };
+
+        const queuePayment = (payment: Payment) => {
+            const key = resolvePaymentKey(payment);
+            if (existingKeys.has(key)) return;
+            existingKeys.add(key);
+            generatedPayments.push(payment);
+        };
+
+        const roomBillId = `BILL_${referenceContract.roomId}_${year}${month}`;
+        const makePayment = (amount: number, type: string, category: Payment['category'], description = ''): Payment => ({
+            id: `PY_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+            contractId: referenceContract.id,
+            billId: roomBillId,
+            amount,
+            paidAmount: 0,
+            remainingAmount: amount,
+            lastCollectedAmount: 0,
+            type,
+            period: targetPeriod,
+            dueDate,
+            status: STATUS_PENDING,
+            description,
+            category,
+            direction: 'income',
+            sourceDate,
+            billStatus: paymentStatusToBillStatus(STATUS_PENDING),
+            paymentMethod: 'bank_transfer',
+        });
+
+        // 1. Tiền phòng định kỳ (Chỉ thu dựa trên Hợp đồng chính của phòng)
+        queuePayment({
+            id: `PY_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+            contractId: referenceContract.id,
+            billId: roomBillId,
+            amount: referenceContract.price,
+            paidAmount: 0,
+            remainingAmount: referenceContract.price,
+            lastCollectedAmount: 0,
+            type: '\u0054i\u1ec1n ph\u00f2ng \u0111\u1ecbnh k\u1ef3',
+            period: targetPeriod,
+            dueDate,
+            status: STATUS_PENDING,
+            category: 'room',
+            direction: 'income',
+            sourceDate,
+            billStatus: paymentStatusToBillStatus(STATUS_PENDING),
+            paymentMethod: 'bank_transfer',
+        });
+
+        // 2. Extra Services (Dịch vụ thêm theo hợp đồng chính)
+        (referenceContract.extraServices || [])
+            .filter(service => service.enabled)
+            .forEach(service => {
+                queuePayment({
+                    id: `PY_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+                    contractId: referenceContract.id,
+                    billId: roomBillId,
+                    amount: service.unitPrice,
+                    paidAmount: 0,
+                    remainingAmount: service.unitPrice,
+                    lastCollectedAmount: 0,
+                    type: service.name,
+                    period: targetPeriod,
+                    dueDate,
+                    status: STATUS_PENDING,
+                    description: `D\u1ecbch v\u1ee5: ${service.name}`,
+                    category: 'service',
+                    direction: 'income',
+                    sourceDate,
+                    billStatus: paymentStatusToBillStatus(STATUS_PENDING),
+                    paymentMethod: 'bank_transfer',
+                });
+            });
+
+        // 3. Internet
+        if (referenceContract.internetPrice > 0) {
+            queuePayment(makePayment(referenceContract.internetPrice, 'Internet', 'internet'));
+        }
+
+        const usage = latestServiceRecords.get(referenceContract.roomId);
+        
+        // 4. Điện
+        const isElectricFixed = referenceContract.electricBillingType === 'fixed';
+        if (isElectricFixed) {
+            queuePayment(makePayment(referenceContract.electricPrice, '\u0054i\u1ec1n \u0111i\u1ec7n', 'electric', 'Kho\u00e1n c\u1ed1 \u0111\u1ecbnh'));
+        } else if (usage && usage.electricUsage > 0) {
+            queuePayment(makePayment(usage.electricUsage * referenceContract.electricPrice, '\u0054i\u1ec1n \u0111i\u1ec7n', 'electric', `${usage.electricOldReading ?? 0} -> ${usage.electricNewReading ?? usage.electricUsage} (${usage.electricUsage} kWh)`));
+        }
+
+        // 5. Nước
+        const isWaterFixed = referenceContract.waterBillingType === 'fixed';
+        if (isWaterFixed) {
+            queuePayment(makePayment(referenceContract.waterPrice, '\u0054i\u1ec1n n\u01b0\u1edbc', 'water', 'Kho\u00e1n c\u1ed1 \u0111\u1ecbnh'));
+        } else if (usage && usage.waterUsage > 0) {
+            queuePayment(makePayment(usage.waterUsage * referenceContract.waterPrice, '\u0054i\u1ec1n n\u01b0\u1edbc', 'water', `${usage.waterOldReading ?? 0} -> ${usage.waterNewReading ?? usage.waterUsage} (${usage.waterUsage} m3)`));
+        }
+
+        // 6. Phụ thu khác
+        if (usage && usage.otherCost > 0) {
+            queuePayment(makePayment(usage.otherCost, 'Ph\u1ee5 thu kh\u00e1c', 'other', `Kh\u00e1c k\u1ef3 ${usage.month}`));
+        }
+    };
+
+    const generateMonthlyPayments = (periodOverride?: string) => {
+        const targetPeriod = resolveTargetBillingPeriod(periodOverride);
         const roomSharedCategories = new Set<NonNullable<Payment['category']>>(['internet', 'electric', 'water', 'other']);
         const contractById = new Map<string, Contract>(contracts.map(contract => [contract.id, contract]));
         const activeContracts = getBillableContractsForPeriod(targetPeriod);
@@ -1899,7 +2016,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             return `contract:${payment.contractId}:${category}:${payment.type}`;
         };
 
-        const existingKeys = new Set(
+        const existingKeys = new Set<string>(
             payments
                 .filter(payment => payment.period === targetPeriod && (payment.direction || 'income') !== 'expense')
                 .map(resolvePaymentKey),
@@ -1922,13 +2039,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             activeContractsByRoom.set(contract.roomId, roomContracts);
         });
 
-        const queuePayment = (payment: Payment) => {
-            const key = resolvePaymentKey(payment);
-            if (existingKeys.has(key)) return;
-            existingKeys.add(key);
-            generatedPayments.push(payment);
-        };
-
         activeContractsByRoom.forEach(roomContracts => {
             roomContracts.sort(
                 (left, right) =>
@@ -1937,88 +2047,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             );
 
             const referenceContract = roomContracts[0];
-            const roomBillId = `BILL_${referenceContract.roomId}_${year}${month}`;
-            const makePayment = (amount: number, type: string, category: Payment['category'], description = ''): Payment => ({
-                id: `PY_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-                contractId: referenceContract.id,
-                billId: roomBillId,
-                amount,
-                paidAmount: 0,
-                remainingAmount: amount,
-                lastCollectedAmount: 0,
-                type,
-                period: targetPeriod,
-                dueDate,
-                status: STATUS_PENDING,
-                description,
-                category,
-                direction: 'income',
-                sourceDate,
-                billStatus: paymentStatusToBillStatus(STATUS_PENDING),
-                paymentMethod: 'bank_transfer',
-            });
-
-            roomContracts.forEach(contract => {
-                queuePayment({
-                    id: `PY_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-                    contractId: contract.id,
-                    billId: roomBillId,
-                    amount: contract.price,
-                    paidAmount: 0,
-                    remainingAmount: contract.price,
-                    lastCollectedAmount: 0,
-                    type: '\u0054i\u1ec1n ph\u00f2ng \u0111\u1ecbnh k\u1ef3',
-                    period: targetPeriod,
-                    dueDate,
-                    status: STATUS_PENDING,
-                    category: 'room',
-                    direction: 'income',
-                    sourceDate,
-                    billStatus: paymentStatusToBillStatus(STATUS_PENDING),
-                    paymentMethod: 'bank_transfer',
-                });
-
-                (contract.extraServices || [])
-                    .filter(service => service.enabled)
-                    .forEach(service => {
-                        queuePayment({
-                            id: `PY_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-                            contractId: contract.id,
-                            billId: roomBillId,
-                            amount: service.unitPrice,
-                            paidAmount: 0,
-                            remainingAmount: service.unitPrice,
-                            lastCollectedAmount: 0,
-                            type: service.name,
-                            period: targetPeriod,
-                            dueDate,
-                            status: STATUS_PENDING,
-                            description: `D\u1ecbch v\u1ee5: ${service.name}`,
-                            category: 'service',
-                            direction: 'income',
-                            sourceDate,
-                            billStatus: paymentStatusToBillStatus(STATUS_PENDING),
-                            paymentMethod: 'bank_transfer',
-                        });
-                    });
-            });
-
-            if (referenceContract.internetPrice > 0) {
-                queuePayment(makePayment(referenceContract.internetPrice, 'Internet', 'internet'));
-            }
-
-            const usage = latestServiceRecords.get(referenceContract.roomId);
-            if (!usage) return;
-
-            if (usage.electricUsage > 0) {
-                queuePayment(makePayment(usage.electricUsage * referenceContract.electricPrice, '\u0054i\u1ec1n \u0111i\u1ec7n', 'electric', `${usage.electricOldReading ?? 0} -> ${usage.electricNewReading ?? usage.electricUsage} (${usage.electricUsage} kWh)`));
-            }
-            if (usage.waterUsage > 0) {
-                queuePayment(makePayment(usage.waterUsage * referenceContract.waterPrice, '\u0054i\u1ec1n n\u01b0\u1edbc', 'water', `${usage.waterOldReading ?? 0} -> ${usage.waterNewReading ?? usage.waterUsage} (${usage.waterUsage} m3)`));
-            }
-            if (usage.otherCost > 0) {
-                queuePayment(makePayment(usage.otherCost, 'Ph\u1ee5 thu kh\u00e1c', 'other', `Kh\u00e1c k\u1ef3 ${usage.month}`));
-            }
+            createRoomPayments(referenceContract, targetPeriod, roomContracts, generatedPayments, existingKeys, latestServiceRecords, roomSharedCategories, contractById);
         });
 
         if (generatedPayments.length === 0) {
@@ -2041,6 +2070,69 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             actionPath: '/app/payments',
         });
         alert(`Đã tạo ${generatedPayments.length} phiếu thu cho kỳ ${targetPeriod}.`);
+    };
+
+    const generateRoomBill = (roomId: string, periodOverride?: string) => {
+        const targetPeriod = resolveTargetBillingPeriod(periodOverride);
+        const roomSharedCategories = new Set<NonNullable<Payment['category']>>(['internet', 'electric', 'water', 'other']);
+        const contractById = new Map<string, Contract>(contracts.map(contract => [contract.id, contract]));
+        
+        const activeContracts = getBillableContractsForPeriod(targetPeriod).filter(contract => contract.roomId === roomId);
+
+        if (activeContracts.length === 0) {
+            alert(`Không có hợp đồng hiệu lực cho phòng này để tạo phiếu thu kỳ ${targetPeriod}.`);
+            return { length: 0 };
+        }
+
+        const resolvePaymentKey = (payment: Payment) => {
+            const category = payment.category || 'other';
+            if (roomSharedCategories.has(category)) {
+                return `room:${roomId}:${category}:${payment.type}`;
+            }
+            if (category === 'service') {
+                return `contract:${payment.contractId}:${category}:${payment.type}:${payment.description || ''}`;
+            }
+            return `contract:${payment.contractId}:${category}:${payment.type}`;
+        };
+
+        const existingKeys = new Set<string>(
+            payments
+                .filter(payment => payment.period === targetPeriod && (payment.direction || 'income') !== 'expense')
+                .map(resolvePaymentKey),
+        );
+
+        const latestServiceRecords = new Map<string, ServiceRecord>();
+        serviceRecords
+            .filter(record => record.month === targetPeriod && record.roomId === roomId)
+            .sort((left, right) => new Date(left.recordedAt || 0).getTime() - new Date(right.recordedAt || 0).getTime())
+            .forEach(record => {
+                latestServiceRecords.set(record.roomId, record);
+            });
+
+        const generatedPayments: Payment[] = [];
+
+        activeContracts.sort(
+            (left, right) =>
+                new Date(right.startDate || right.createdAt || 0).getTime() -
+                new Date(left.startDate || left.createdAt || 0).getTime(),
+        );
+
+        const referenceContract = activeContracts[0];
+        createRoomPayments(referenceContract, targetPeriod, activeContracts, generatedPayments, existingKeys, latestServiceRecords, roomSharedCategories, contractById);
+
+        if (generatedPayments.length === 0) {
+            alert(`Sắp xuất hoá đơn cho nhóm chi phí chưa tính, nhưng không có dữ liệu cần tạo mới.`);
+            return { length: 0 };
+        }
+
+        setPayments(prev => [...prev, ...generatedPayments]);
+        generatedPayments.forEach(payment => {
+            pushToSheet('payments', payment);
+            if (currentUser) upsertCacheItem(currentUser.id, 'payments', payment);
+        });
+        
+        alert(`Đã tạo thành công ${generatedPayments.length} khoản thu cho phòng trong kỳ ${targetPeriod}.`);
+        return { length: generatedPayments.length, period: targetPeriod };
     };
     const sendBulkBills = (period: string) => {
         const periodBills = buildRoomBills({ payments, contracts, rooms, customers, buildings }).filter(bill => bill.period === period);
@@ -2201,7 +2293,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     const sendHostPaymentReminder = (hostId: string, amount: number) => {
-        alert(`?? g?i email nh?c n? s? ti?n ${formatCurrency(amount)} t?i Host ${hostId}`);
+        createHostNotification({
+            hostId,
+            type: 'system',
+            severity: 'warning',
+            title: 'Hết hạn thanh toán cước phí',
+            message: `Hệ thống nhắc nhở: Vui lòng thanh toán khoản phí sử dụng nền tảng ${formatCurrency(amount)} để tránh bị gián đoạn dịch vụ.`,
+            actionPath: '/app/settings',
+            metadata: {
+                amount,
+            }
+        });
+        alert(`Đã gửi thông báo nhắc thanh toán ${formatCurrency(amount)} đến Host.`);
     };
 
     const createGoogleSheetForHost = async (hostId: string): Promise<{ success: boolean; url?: string; error?: string }> => {
@@ -2435,6 +2538,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addServiceRecord,
         markPaymentPaid,
         sendReminder,
+        generateRoomBill,
         generateMonthlyPayments,
         sendBulkBills,
         updateBankInfo,

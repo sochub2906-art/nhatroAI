@@ -5,6 +5,7 @@ import type { Contract, Customer } from '../types';
 import CCCDScannerModal from './CCCDScannerModal';
 import { applyCustomerQrData } from '../utils/customerIdentity';
 import { getRoomOccupancyCount } from '../utils/roomOccupancy';
+import SmartDateInput from './SmartDateInput';
 
 export type WizardMode = 'new' | 'existing';
 
@@ -52,10 +53,12 @@ export default function QuickContractWizardEnhanced({ onClose, initialRoomId = '
         price: initialRoomId ? (rooms.find((room) => room.id === initialRoomId)?.price || 0) : 0,
         electricPrice: 3500,
         waterPrice: 15000,
+        waterBillingType: 'meter',
         internetPrice: 100000,
         extraServices: SERVICE_PRESETS.map((service) => ({ ...service })),
         isActive: true,
         endDate: '',
+        electricBillingType: 'meter',
     });
 
     const activeCustomerIds = useMemo(
@@ -420,11 +423,9 @@ export default function QuickContractWizardEnhanced({ onClose, initialRoomId = '
                                                 placeholder="Số CCCD"
                                                 className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                                             />
-                                            <input
-                                                type="date"
-                                                lang="vi-VN"
+                                            <SmartDateInput
                                                 value={customer.idIssueDate || ''}
-                                                onChange={(event) => setCustomer((prev) => ({ ...prev, idIssueDate: event.target.value }))}
+                                                onChange={(value) => setCustomer((prev) => ({ ...prev, idIssueDate: value }))}
                                                 className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                                             />
                                             <input
@@ -501,12 +502,10 @@ export default function QuickContractWizardEnhanced({ onClose, initialRoomId = '
                                         </select>
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
-                                        <input
+                                        <SmartDateInput
                                             required
-                                            type="date"
-                                            lang="vi-VN"
                                             value={contract.startDate}
-                                            onChange={(event) => setContract((prev) => ({ ...prev, startDate: event.target.value }))}
+                                            onChange={(value) => setContract((prev) => ({ ...prev, startDate: value }))}
                                             className="w-full rounded-xl border border-slate-300 bg-slate-50 p-2.5 outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800"
                                         />
                                         <input
@@ -531,25 +530,79 @@ export default function QuickContractWizardEnhanced({ onClose, initialRoomId = '
 
                                 <div className="space-y-4">
                                     <h4 className="border-b border-slate-100 pb-2 font-semibold text-purple-600 dark:border-slate-800 dark:text-purple-400">Điện, nước và dịch vụ</h4>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <input
-                                            required
-                                            type="number"
-                                            min={0}
-                                            value={contract.electricPrice}
-                                            onChange={(event) => setContract((prev) => ({ ...prev, electricPrice: Number(event.target.value) }))}
-                                            placeholder="Giá điện"
-                                            className="w-full rounded-xl border border-slate-300 bg-slate-50 p-2.5 outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800"
-                                        />
-                                        <input
-                                            required
-                                            type="number"
-                                            min={0}
-                                            value={contract.waterPrice}
-                                            onChange={(event) => setContract((prev) => ({ ...prev, waterPrice: Number(event.target.value) }))}
-                                            placeholder="Giá nước"
-                                            className="w-full rounded-xl border border-slate-300 bg-slate-50 p-2.5 outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800"
-                                        />
+                                    
+                                    {/* Electricity Billing Section */}
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-xs font-medium text-slate-500">Cách tính Tiền điện</label>
+                                            <div className="flex gap-1 rounded-lg bg-slate-100 p-1 dark:bg-slate-800">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setContract(prev => ({ ...prev, electricBillingType: 'meter' }))}
+                                                    className={`rounded-md px-2 py-1 text-[10px] font-bold transition ${contract.electricBillingType !== 'fixed' ? 'bg-white text-blue-600 shadow-sm dark:bg-slate-700' : 'text-slate-400'}`}
+                                                >
+                                                    Chỉ số
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setContract(prev => ({ ...prev, electricBillingType: 'fixed' }))}
+                                                    className={`rounded-md px-2 py-1 text-[10px] font-bold transition ${contract.electricBillingType === 'fixed' ? 'bg-white text-blue-600 shadow-sm dark:bg-slate-700' : 'text-slate-400'}`}
+                                                >
+                                                    Khoán
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div className="relative">
+                                            <input
+                                                required
+                                                type="number"
+                                                min={0}
+                                                value={contract.electricPrice}
+                                                onChange={(event) => setContract((prev) => ({ ...prev, electricPrice: Number(event.target.value) }))}
+                                                placeholder={contract.electricBillingType === 'fixed' ? "Số tiền cố định (đ)" : "Giá điện (đ/kWh)"}
+                                                className="w-full rounded-xl border border-slate-300 bg-slate-50 p-2.5 pr-12 outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800"
+                                            />
+                                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-slate-400">
+                                                {contract.electricBillingType === 'fixed' ? 'đ' : 'đ/số'}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Water Billing Section */}
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-xs font-medium text-slate-500">Cách tính Tiền nước</label>
+                                            <div className="flex gap-1 rounded-lg bg-slate-100 p-1 dark:bg-slate-800">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setContract(prev => ({ ...prev, waterBillingType: 'meter' }))}
+                                                    className={`rounded-md px-2 py-1 text-[10px] font-bold transition ${contract.waterBillingType !== 'fixed' ? 'bg-white text-blue-600 shadow-sm dark:bg-slate-700' : 'text-slate-400'}`}
+                                                >
+                                                    Chỉ số
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setContract(prev => ({ ...prev, waterBillingType: 'fixed' }))}
+                                                    className={`rounded-md px-2 py-1 text-[10px] font-bold transition ${contract.waterBillingType === 'fixed' ? 'bg-white text-blue-600 shadow-sm dark:bg-slate-700' : 'text-slate-400'}`}
+                                                >
+                                                    Khoán
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div className="relative">
+                                            <input
+                                                required
+                                                type="number"
+                                                min={0}
+                                                value={contract.waterPrice}
+                                                onChange={(event) => setContract((prev) => ({ ...prev, waterPrice: Number(event.target.value) }))}
+                                                placeholder={contract.waterBillingType === 'fixed' ? "Số tiền cố định (đ)" : "Giá nước (đ/m3)"}
+                                                className="w-full rounded-xl border border-slate-300 bg-slate-50 p-2.5 pr-12 outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800"
+                                            />
+                                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-slate-400">
+                                                {contract.waterBillingType === 'fixed' ? 'đ' : 'đ/khối'}
+                                            </span>
+                                        </div>
                                     </div>
 
                                     <div className="pt-2">

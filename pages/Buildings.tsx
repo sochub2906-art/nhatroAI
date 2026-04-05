@@ -5,6 +5,7 @@ import { formatCurrency, useApp } from '../AppContext';
 import { Building, BuildingType, Equipment } from '../types';
 import BulkRoomGenerator from '../components/BulkRoomGenerator';
 import { formatDateVN } from '../utils/dateFormat';
+import SmartDateInput from '../components/SmartDateInput';
 
 type BuildingDraft = Partial<Building> & {
     initialEquipment?: Array<Partial<Equipment>>;
@@ -275,12 +276,10 @@ export default function Buildings() {
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
                                             <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Ngày bắt đầu</label>
-                                            <input
-                                                type="date"
-                                                lang="vi-VN"
-                                                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                                            <SmartDateInput
                                                 value={newBuilding.leaseStartDate || ''}
-                                                onChange={event => setNewBuilding(prev => ({ ...prev, leaseStartDate: event.target.value }))}
+                                                onChange={value => setNewBuilding(prev => ({ ...prev, leaseStartDate: value }))}
+                                                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
                                             />
                                         </div>
                                         <div>

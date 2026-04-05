@@ -26,6 +26,7 @@ import {
     getEquipmentMonthlyDepreciation,
 } from '../utils/hostAnalytics';
 import { formatDateVN } from '../utils/dateFormat';
+import SmartDateInput from '../components/SmartDateInput';
 
 type EquipmentDraft = {
     name: string;
@@ -405,7 +406,7 @@ export default function EquipmentPage() {
                         ))}
                     </select>
                 </div>
-                <div className="flex items-center gap-2 lg:hidden">
+                <div className="flex items-center gap-2">
                     <button type="button" onClick={() => setViewMode('card')} className={`inline-flex h-10 w-10 items-center justify-center rounded-xl transition ${viewMode === 'card' ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`} title="Dạng card">
                         <LayoutGrid className="h-5 w-5" />
                     </button>
@@ -425,8 +426,8 @@ export default function EquipmentPage() {
                 ))}
             </div>
 
-            {/* Mobile Card View */}
-            <div className={`grid gap-4 lg:hidden ${viewMode !== 'card' ? 'hidden' : ''}`}>
+            {/* Card View */}
+            <div className={`grid gap-4 sm:grid-cols-2 xl:grid-cols-3 ${viewMode !== 'card' ? 'hidden' : ''}`}>
                 {filteredEquipment.length === 0 && (
                     <div className="rounded-[1.75rem] border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-500 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
                         Chưa có tài sản nào khớp với bộ lọc hiện tại.
@@ -545,7 +546,7 @@ export default function EquipmentPage() {
                 })}
             </div>
 
-            <div className="hidden overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:block">
+            <div className={`overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 ${viewMode !== 'list' ? 'hidden' : 'hidden lg:block'}`}>
                 <div className="overflow-x-auto">
                     <table className="min-w-full text-left">
                         <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-800/80 dark:text-slate-400">
@@ -657,105 +658,133 @@ export default function EquipmentPage() {
                             <section className="space-y-4">
                                 <div className="text-sm font-semibold text-slate-900 dark:text-white">Thông tin cơ bản</div>
                                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                                    <input
-                                        required
-                                        value={draft.name}
-                                        onChange={event => setDraft(prev => ({ ...prev, name: event.target.value }))}
-                                        placeholder="Tên tài sản"
-                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                                    />
-                                    <select
-                                        required
-                                        value={draft.buildingId}
-                                        onChange={event => setDraft(prev => ({ ...prev, buildingId: event.target.value, roomId: '' }))}
-                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                                    >
-                                        <option value="">Chọn tòa nhà</option>
-                                        {buildings.map(item => (
-                                            <option key={item.id} value={item.id}>
-                                                {item.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <select
-                                        value={draft.roomId}
-                                        onChange={event => setDraft(prev => ({ ...prev, roomId: event.target.value }))}
-                                        disabled={!draft.buildingId}
-                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:disabled:bg-slate-800"
-                                    >
-                                        <option value="">Khu vực chung</option>
-                                        {roomsForDraft.map(item => (
-                                            <option key={item.id} value={item.id}>
-                                                {item.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <select
-                                        value={draft.status}
-                                        onChange={event => setDraft(prev => ({ ...prev, status: event.target.value as EquipmentStatus }))}
-                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                                    >
-                                        {Object.keys(STATUS_META).map(status => (
-                                            <option key={status} value={status}>
-                                                {status}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <input
-                                        type="date" lang="vi-VN"
-                                        required
-                                        value={draft.purchaseDate}
-                                        onChange={event => setDraft(prev => ({ ...prev, purchaseDate: event.target.value }))}
-                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                                    />
-                                    <input
-                                        type="number"
-                                        inputMode="numeric"
-                                        min={0}
-                                        value={draft.price}
-                                        onChange={event => setDraft(prev => ({ ...prev, price: event.target.value }))}
-                                        placeholder="Nguyên giá"
-                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                                    />
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-medium text-slate-700 dark:text-slate-300">Tên tài sản <span className="text-rose-500">*</span></label>
+                                        <input
+                                            required
+                                            value={draft.name}
+                                            onChange={event => setDraft(prev => ({ ...prev, name: event.target.value }))}
+                                            placeholder="Tên tài sản"
+                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-medium text-slate-700 dark:text-slate-300">Tòa nhà <span className="text-rose-500">*</span></label>
+                                        <select
+                                            required
+                                            value={draft.buildingId}
+                                            onChange={event => setDraft(prev => ({ ...prev, buildingId: event.target.value, roomId: '' }))}
+                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                                        >
+                                            <option value="">Chọn tòa nhà</option>
+                                            {buildings.map(item => (
+                                                <option key={item.id} value={item.id}>
+                                                    {item.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-medium text-slate-700 dark:text-slate-300">Phòng / Khu vực</label>
+                                        <select
+                                            value={draft.roomId}
+                                            onChange={event => setDraft(prev => ({ ...prev, roomId: event.target.value }))}
+                                            disabled={!draft.buildingId}
+                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:disabled:bg-slate-800"
+                                        >
+                                            <option value="">Khu vực chung</option>
+                                            {roomsForDraft.map(item => (
+                                                <option key={item.id} value={item.id}>
+                                                    {item.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-medium text-slate-700 dark:text-slate-300">Trạng thái <span className="text-rose-500">*</span></label>
+                                        <select
+                                            value={draft.status}
+                                            onChange={event => setDraft(prev => ({ ...prev, status: event.target.value as EquipmentStatus }))}
+                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                                        >
+                                            {Object.keys(STATUS_META).map(status => (
+                                                <option key={status} value={status}>
+                                                    {status}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-medium text-slate-700 dark:text-slate-300">Ngày mua (DD/MM/YYYY) <span className="text-rose-500">*</span></label>
+                                        <SmartDateInput
+                                            required
+                                            value={draft.purchaseDate}
+                                            onChange={value => setDraft(prev => ({ ...prev, purchaseDate: value }))}
+                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-medium text-slate-700 dark:text-slate-300">Nguyên giá (VND) <span className="text-rose-500">*</span></label>
+                                        <input
+                                            type="number"
+                                            inputMode="numeric"
+                                            min={0}
+                                            value={draft.price}
+                                            onChange={event => setDraft(prev => ({ ...prev, price: event.target.value }))}
+                                            placeholder="VD: 5000000"
+                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                                        />
+                                    </div>
                                 </div>
                             </section>
 
                             <section className="space-y-4">
                                 <div className="text-sm font-semibold text-slate-900 dark:text-white">Khấu hao và đánh giá</div>
                                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                                    <input
-                                        type="number"
-                                        inputMode="numeric"
-                                        min={0}
-                                        value={draft.depreciationMonths}
-                                        onChange={event => setDraft(prev => ({ ...prev, depreciationMonths: event.target.value }))}
-                                        placeholder="Số tháng khấu hao"
-                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                                    />
-                                    <input
-                                        type="number"
-                                        inputMode="numeric"
-                                        min={0}
-                                        value={draft.salvageValue}
-                                        onChange={event => setDraft(prev => ({ ...prev, salvageValue: event.target.value }))}
-                                        placeholder="Giá trị thu hồi"
-                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                                    />
-                                    <input
-                                        type="number"
-                                        inputMode="numeric"
-                                        min={0}
-                                        value={draft.currentValue}
-                                        onChange={event => setDraft(prev => ({ ...prev, currentValue: event.target.value }))}
-                                        placeholder="Giá trị còn lại"
-                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                                    />
-                                    <input
-                                        type="date" lang="vi-VN"
-                                        value={draft.lastValuationDate}
-                                        onChange={event => setDraft(prev => ({ ...prev, lastValuationDate: event.target.value }))}
-                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                                    />
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-medium text-slate-700 dark:text-slate-300">Khấu hao (tháng)</label>
+                                        <input
+                                            type="number"
+                                            inputMode="numeric"
+                                            min={0}
+                                            value={draft.depreciationMonths}
+                                            onChange={event => setDraft(prev => ({ ...prev, depreciationMonths: event.target.value }))}
+                                            placeholder="VD: 36"
+                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-medium text-slate-700 dark:text-slate-300">Giá trị thu hồi sau KH</label>
+                                        <input
+                                            type="number"
+                                            inputMode="numeric"
+                                            min={0}
+                                            value={draft.salvageValue}
+                                            onChange={event => setDraft(prev => ({ ...prev, salvageValue: event.target.value }))}
+                                            placeholder="VD: 500000"
+                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-medium text-slate-700 dark:text-slate-300">Giá trị còn lại hiện tại</label>
+                                        <input
+                                            type="number"
+                                            inputMode="numeric"
+                                            min={0}
+                                            value={draft.currentValue}
+                                            onChange={event => setDraft(prev => ({ ...prev, currentValue: event.target.value }))}
+                                            placeholder="Tự động tính nếu bỏ trống"
+                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-medium text-slate-700 dark:text-slate-300">Ngày đánh giá (DD/MM/YYYY)</label>
+                                        <SmartDateInput
+                                            value={draft.lastValuationDate}
+                                            onChange={value => setDraft(prev => ({ ...prev, lastValuationDate: value }))}
+                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                                        />
+                                    </div>
                                 </div>
 
                                 <div className="rounded-[1.5rem] bg-slate-50 p-4 text-sm text-slate-600 dark:bg-slate-800/70 dark:text-slate-300">
@@ -806,54 +835,70 @@ export default function EquipmentPage() {
                                         {draft.maintenanceHistory.map((entry, index) => (
                                             <div key={entry.id} className="rounded-[1.5rem] border border-slate-200 p-4 dark:border-slate-700">
                                                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-[0.9fr_0.9fr_0.9fr_1fr_auto]">
-                                                    <select
-                                                        value={entry.type}
-                                                        onChange={event => setMaintenanceField(index, 'type', event.target.value)}
-                                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                                                    >
-                                                        <option value="repair">Sửa chữa</option>
-                                                        <option value="maintenance">Bảo trì</option>
-                                                        <option value="revaluation">Đánh giá lại</option>
-                                                    </select>
-                                                    <input
-                                                        type="date" lang="vi-VN"
-                                                        value={entry.date}
-                                                        onChange={event => setMaintenanceField(index, 'date', event.target.value)}
-                                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                                                    />
-                                                    <input
-                                                        type="number"
-                                                        inputMode="numeric"
-                                                        min={0}
-                                                        value={entry.cost}
-                                                        onChange={event => setMaintenanceField(index, 'cost', event.target.value)}
-                                                        placeholder="Chi phí"
-                                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                                                    />
-                                                    <input
-                                                        type="number"
-                                                        inputMode="numeric"
-                                                        min={0}
-                                                        value={entry.valueAfter}
-                                                        onChange={event => setMaintenanceField(index, 'valueAfter', event.target.value)}
-                                                        placeholder={entry.type === 'revaluation' ? 'Giá trị sau đánh giá' : 'Giá trị sau xử lý (nếu có)'}
-                                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                                                    />
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => removeMaintenanceEntry(index)}
-                                                        className="inline-flex h-12 items-center justify-center rounded-2xl border border-rose-200 px-4 text-rose-600 transition hover:bg-rose-50 dark:border-rose-900/30 dark:text-rose-300 dark:hover:bg-rose-950/20"
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </button>
+                                                    <div className="space-y-1">
+                                                        <label className="text-xs font-medium text-slate-700 dark:text-slate-300">Loại giao dịch</label>
+                                                        <select
+                                                            value={entry.type}
+                                                            onChange={event => setMaintenanceField(index, 'type', event.target.value)}
+                                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                                                        >
+                                                            <option value="repair">Sửa chữa</option>
+                                                            <option value="maintenance">Bảo trì</option>
+                                                            <option value="revaluation">Đánh giá lại</option>
+                                                        </select>
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <label className="text-xs font-medium text-slate-700 dark:text-slate-300">Ngày ghi nhận</label>
+                                                        <SmartDateInput
+                                                            value={entry.date}
+                                                            onChange={value => setMaintenanceField(index, 'date', value)}
+                                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <label className="text-xs font-medium text-slate-700 dark:text-slate-300">Chi phí (VND)</label>
+                                                        <input
+                                                            type="number"
+                                                            inputMode="numeric"
+                                                            min={0}
+                                                            value={entry.cost}
+                                                            onChange={event => setMaintenanceField(index, 'cost', event.target.value)}
+                                                            placeholder="Chi phí"
+                                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <label className="text-xs font-medium text-slate-700 dark:text-slate-300">Giá trị sau xử lý (nếu thay đổi)</label>
+                                                        <input
+                                                            type="number"
+                                                            inputMode="numeric"
+                                                            min={0}
+                                                            value={entry.valueAfter}
+                                                            onChange={event => setMaintenanceField(index, 'valueAfter', event.target.value)}
+                                                            placeholder={entry.type === 'revaluation' ? 'Giá trị sau đánh giá' : 'Để trống nếu giữ nguyên'}
+                                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                                                        />
+                                                    </div>
+                                                    <div className="flex items-end pb-1 lg:pb-0 lg:pt-5 lg:items-start pl-1">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => removeMaintenanceEntry(index)}
+                                                            className="inline-flex h-12 w-full lg:w-auto items-center justify-center rounded-2xl border border-rose-200 px-4 text-rose-600 transition hover:bg-rose-50 dark:border-rose-900/30 dark:text-rose-300 dark:hover:bg-rose-950/20"
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                                <textarea
-                                                    rows={3}
-                                                    value={entry.note}
-                                                    onChange={event => setMaintenanceField(index, 'note', event.target.value)}
-                                                    placeholder="Ghi chú sửa chữa, hạng mục thay thế, đơn vị thực hiện..."
-                                                    className="mt-4 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                                                />
+                                                <div className="mt-4 space-y-1">
+                                                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300">Nội dung chi tiết</label>
+                                                    <textarea
+                                                        rows={3}
+                                                        value={entry.note}
+                                                        onChange={event => setMaintenanceField(index, 'note', event.target.value)}
+                                                        placeholder="Ghi chú sửa chữa, hạng mục thay thế, đơn vị thực hiện..."
+                                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                                                    />
+                                                </div>
                                             </div>
                                         ))}
                                     </div>

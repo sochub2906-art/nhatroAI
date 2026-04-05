@@ -3,8 +3,10 @@ import { Link } from 'react-router-dom';
 import { CheckSquare, Edit, ExternalLink, LayoutGrid, List, Plus, PlusCircle, Square, Trash2, XCircle, Printer } from 'lucide-react';
 import { formatCurrency, SERVICE_PRESETS, useApp } from '../AppContext';
 import { Contract, ContractService } from '../types';
+import QuickContractWizard from '../components/QuickContractWizardEnhanced';
 import { getRoomOccupancyCount } from '../utils/roomOccupancy';
 import { printContractDocument } from '../utils/contractTemplate';
+import SmartDateInput from '../components/SmartDateInput';
 
 export default function Contracts() {
     const { contracts, rooms, customers, buildings, currentUser, createContract, updateContract, terminateContract } = useApp();
@@ -13,6 +15,7 @@ export default function Contracts() {
     const [customServiceName, setCustomServiceName] = useState('');
     const [customServicePrice, setCustomServicePrice] = useState(0);
     const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
+    const [isWizardOpen, setIsWizardOpen] = useState(false);
 
     const initialFormState: Contract = {
         id: '',
@@ -27,6 +30,8 @@ export default function Contracts() {
         extraServices: [],
         isActive: true,
         endDate: '',
+        electricBillingType: 'meter',
+        waterBillingType: 'meter',
     };
     const [form, setForm] = useState<Contract>(initialFormState);
 
@@ -41,9 +46,7 @@ export default function Contracts() {
     };
 
     const handleOpenCreate = () => {
-        setIsEditMode(false);
-        setForm({ ...initialFormState, extraServices: SERVICE_PRESETS.map(service => ({ ...service })) });
-        setIsModalOpen(true);
+        setIsWizardOpen(true);
     };
 
     const handleOpenEdit = (contract: Contract) => {
@@ -247,7 +250,19 @@ export default function Contracts() {
                                     </td>
                                     <td className="px-5 py-4 text-slate-500">{contract.startDate}</td>
                                     <td className="px-5 py-4 text-slate-500">{contract.endDate}</td>
-                                    <td className="px-5 py-4 font-medium text-blue-500">{formatCurrency(contract.price)}</td>
+                                    <td className="px-5 py-4 font-medium text-blue-500">
+                                        <div className="flex flex-col">
+                                            <span>{formatCurrency(contract.price)}</span>
+                                            <div className="flex gap-1.5 pt-1 text-[10px] whitespace-nowrap">
+                                                <span className={contract.electricBillingType === 'fixed' ? 'text-amber-600' : 'text-slate-400'}>
+                                                    Đ: {formatCurrency(contract.electricPrice)}{contract.electricBillingType === 'fixed' ? ' (K)' : ''}
+                                                </span>
+                                                <span className={contract.waterBillingType === 'fixed' ? 'text-blue-600' : 'text-slate-400'}>
+                                                    N: {formatCurrency(contract.waterPrice)}{contract.waterBillingType === 'fixed' ? ' (K)' : ''}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </td>
                                     <td className="px-5 py-4">
                                         {contract.extraServices && contract.extraServices.filter(service => service.enabled).length > 0 ? (
                                             <div className="flex max-w-[200px] flex-wrap gap-1">
@@ -343,13 +358,11 @@ export default function Contracts() {
                                     <div className="grid grid-cols-2 gap-3">
                                         <div>
                                             <label className="mb-1 block text-sm text-slate-500">Ngày bắt đầu</label>
-                                            <input
+                                            <SmartDateInput
                                                 required
-                                                type="date"
-                                                lang="vi-VN"
-                                                className="w-full rounded-xl border border-slate-300 bg-slate-50 p-2.5 outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800"
                                                 value={form.startDate}
-                                                onChange={event => setForm({ ...form, startDate: event.target.value })}
+                                                onChange={value => setForm({ ...form, startDate: value })}
+                                                className="w-full rounded-xl border border-slate-300 bg-slate-50 p-2.5 outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800"
                                             />
                                         </div>
                                         <div>
@@ -377,24 +390,42 @@ export default function Contracts() {
                                             onChange={event => setForm({ ...form, price: +event.target.value })}
                                         />
                                     </div>
-                                    <div>
-                                        <label className="mb-1 block text-sm text-slate-500">Giá điện (VNĐ/kWh)</label>
+                                    
+                                    {/* Electricity Billing */}
+                                    <div className="space-y-1.5">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-xs font-medium text-slate-500">Tiền điện ({form.electricBillingType === 'fixed' ? 'Khoán' : 'Chỉ số'})</label>
+                                            <div className="flex gap-1 rounded-lg bg-slate-100 p-0.5 dark:bg-slate-800">
+                                                <button type="button" onClick={() => setForm({ ...form, electricBillingType: 'meter' })} className={`rounded-md px-2 py-0.5 text-[10px] font-bold ${form.electricBillingType !== 'fixed' ? 'bg-white text-blue-600 shadow-sm dark:bg-slate-700' : 'text-slate-400'}`}>Số</button>
+                                                <button type="button" onClick={() => setForm({ ...form, electricBillingType: 'fixed' })} className={`rounded-md px-2 py-0.5 text-[10px] font-bold ${form.electricBillingType === 'fixed' ? 'bg-white text-blue-600 shadow-sm dark:bg-slate-700' : 'text-slate-400'}`}>K</button>
+                                            </div>
+                                        </div>
                                         <input
                                             required
                                             type="number"
                                             className="w-full rounded-xl border border-slate-300 bg-slate-50 p-2.5 outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800"
                                             value={form.electricPrice}
                                             onChange={event => setForm({ ...form, electricPrice: +event.target.value })}
+                                            placeholder={form.electricBillingType === 'fixed' ? "Tiền cố định..." : "Giá mỗi số..."}
                                         />
                                     </div>
-                                    <div>
-                                        <label className="mb-1 block text-sm text-slate-500">Giá nước (VNĐ/khối)</label>
+
+                                    {/* Water Billing */}
+                                    <div className="space-y-1.5">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-xs font-medium text-slate-500">Tiền nước ({form.waterBillingType === 'fixed' ? 'Khoán' : 'Chỉ số'})</label>
+                                            <div className="flex gap-1 rounded-lg bg-slate-100 p-0.5 dark:bg-slate-800">
+                                                <button type="button" onClick={() => setForm({ ...form, waterBillingType: 'meter' })} className={`rounded-md px-2 py-0.5 text-[10px] font-bold ${form.waterBillingType !== 'fixed' ? 'bg-white text-blue-600 shadow-sm dark:bg-slate-700' : 'text-slate-400'}`}>Số</button>
+                                                <button type="button" onClick={() => setForm({ ...form, waterBillingType: 'fixed' })} className={`rounded-md px-2 py-0.5 text-[10px] font-bold ${form.waterBillingType === 'fixed' ? 'bg-white text-blue-600 shadow-sm dark:bg-slate-700' : 'text-slate-400'}`}>K</button>
+                                            </div>
+                                        </div>
                                         <input
                                             required
                                             type="number"
                                             className="w-full rounded-xl border border-slate-300 bg-slate-50 p-2.5 outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800"
                                             value={form.waterPrice}
                                             onChange={event => setForm({ ...form, waterPrice: +event.target.value })}
+                                            placeholder={form.waterBillingType === 'fixed' ? "Tiền cố định..." : "Giá mỗi số..."}
                                         />
                                     </div>
                                     <div>
@@ -485,6 +516,8 @@ export default function Contracts() {
                     </div>
                 </div>
             )}
+            
+            {isWizardOpen && <QuickContractWizard onClose={() => setIsWizardOpen(false)} />}
         </div>
     );
 }

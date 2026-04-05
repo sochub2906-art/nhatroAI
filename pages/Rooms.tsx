@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Building, Home, Plus, Trash2, Users, Edit } from 'lucide-react';
+import { ArrowRight, Building, Home, Plus, Trash2, Users, Edit, LayoutGrid, List } from 'lucide-react';
 import { formatCurrency, useApp } from '../AppContext';
 import { getRoomOccupants } from '../utils/roomOccupancy';
 import { buildRoomBills } from '../utils/paymentBills';
@@ -15,6 +15,8 @@ export default function Rooms() {
     const [roomToDelete, setRoomToDelete] = useState<any>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [filterBuildingId, setFilterBuildingId] = useState('');
+    const [statusFilter, setStatusFilter] = useState('Tất cả');
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [newRoom, setNewRoom] = useState({ id: '', name: '', price: 0, floor: 1, buildingId: '' });
     const [editingRoom, setEditingRoom] = useState<any>(null);
 
@@ -109,7 +111,8 @@ export default function Rooms() {
         return building ? building.name : 'Chưa gán';
     };
 
-    const filteredRooms = filterBuildingId ? rooms.filter(room => room.buildingId === filterBuildingId) : rooms;
+    const filteredRoomsByBuilding = filterBuildingId ? rooms.filter(room => room.buildingId === filterBuildingId) : rooms;
+    const filteredRooms = statusFilter === 'Tất cả' ? filteredRoomsByBuilding : filteredRoomsByBuilding.filter(room => room.status === statusFilter);
     const currentPeriod = getCurrentBillingPeriod();
     const roomBills = React.useMemo(
         () => buildRoomBills({ payments, contracts, rooms, customers, buildings }),
@@ -142,6 +145,31 @@ export default function Rooms() {
                             ))}
                         </select>
                     )}
+                    <select
+                        className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                        value={statusFilter}
+                        onChange={event => setStatusFilter(event.target.value)}
+                    >
+                        <option value="Tất cả">Trạng thái (Tất cả)</option>
+                        <option value="Đang ở">Đang ở</option>
+                        <option value="Trống">Trống</option>
+                    </select>
+                    <div className="flex items-center gap-1 overflow-hidden rounded-lg border border-gray-300 p-1 dark:border-gray-700">
+                        <button
+                            type="button"
+                            onClick={() => setViewMode('grid')}
+                            className={`rounded-md p-1.5 transition ${viewMode === 'grid' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400' : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'}`}
+                        >
+                            <LayoutGrid className="h-4 w-4" />
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setViewMode('list')}
+                            className={`rounded-md p-1.5 transition ${viewMode === 'list' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400' : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'}`}
+                        >
+                            <List className="h-4 w-4" />
+                        </button>
+                    </div>
                     <button
                         type="button"
                         onClick={openAddModal}
@@ -163,7 +191,7 @@ export default function Rooms() {
                 </div>
             )}
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className={viewMode === 'grid' ? "grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3" : "flex flex-col gap-3"}>
                 {filteredRooms.map(room => {
                     const occupants = getRoomOccupants(room.id, contracts, customers);
                     const occupantNames = occupants.map(item => item.customer.name).join(', ');
@@ -188,6 +216,26 @@ export default function Rooms() {
                                 <Building className="h-3.5 w-3.5 text-gray-400" />
                                 <span className="text-xs text-gray-500 dark:text-gray-400">{getBuildingName(room.buildingId)}</span>
                             </div>
+                            
+                            {viewMode === 'list' ? (
+                                <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between py-2 border-t border-b border-gray-100 dark:border-gray-800 mb-4">
+                                    <div className="flex-1">
+                                        <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                                            {occupants.length === 0 ? 'Phòng trống' : `${occupants.length} khách đang ở, ${occupants[0]?.customer?.name || ''}`}
+                                        </div>
+                                    </div>
+                                    <div className="flex-1">
+                                        <div className={`rounded-lg px-2 text-sm font-medium ${getBillStatusTone(currentBill?.status || 'missing')} inline-block`}>
+                                            {currentBill
+                                                ? `Bill ${currentPeriod}: ${currentBill.status}`
+                                                : `Bill ${currentPeriod}: Chưa tạo bill`}
+                                        </div>
+                                    </div>
+                                    <div className="flex-1 text-right">
+                                        <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{formatCurrency(room.price)}</p>
+                                    </div>
+                                </div>
+                            ) : (
 
                             <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 px-3 py-3 dark:border-gray-800 dark:bg-gray-800/50">
                                 <div className="flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">
@@ -235,14 +283,38 @@ export default function Rooms() {
                                         ? `Bill ${currentPeriod}: ${currentBill.status === 'Đã đóng' ? 'Đã đóng tiền tháng' : currentBill.status === 'Quá hạn' ? 'Đang quá hạn thanh toán' : 'Chưa đóng tiền tháng'}`
                                         : `Bill ${currentPeriod}: Chưa tạo bill tháng`}
                                 </div>
-                            </div>
-
-                            <div className="flex items-end justify-between">
-                                <div>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">Giá thuê</p>
-                                    <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{formatCurrency(room.price)}</p>
                                 </div>
-                                <div className="flex gap-2">
+                            )}
+
+                            {viewMode === 'list' ? (
+                                <div className="flex gap-2 justify-end">
+                                    <button
+                                        type="button"
+                                        onClick={event => { event.preventDefault(); openEditModal(room); }}
+                                        className="z-10 rounded-lg p-2 text-gray-400 transition hover:bg-blue-50 hover:text-blue-500 dark:hover:bg-blue-500/10"
+                                        title="Sửa phòng"
+                                    >
+                                        <Edit className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={event => { event.preventDefault(); openDeleteModal(room); }}
+                                        className="z-10 rounded-lg p-2 text-gray-400 transition hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10"
+                                        title="Xóa phòng"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </button>
+                                    <Link to={`/app/rooms/${room.id}`} className="z-10 flex items-center gap-1 rounded-lg bg-blue-50 p-2 text-sm font-medium text-blue-600 transition hover:bg-blue-100 hover:text-blue-700 dark:bg-blue-600/10 dark:text-blue-500 dark:hover:bg-blue-600 dark:hover:text-white">
+                                        Chi tiết <ArrowRight className="h-4 w-4" />
+                                    </Link>
+                                </div>
+                            ) : (
+                                <div className="flex items-end justify-between">
+                                    <div>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">Giá thuê</p>
+                                        <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{formatCurrency(room.price)}</p>
+                                    </div>
+                                    <div className="flex gap-2">
                                     <button
                                         type="button"
                                         onClick={event => { event.preventDefault(); openEditModal(room); }}
@@ -264,6 +336,7 @@ export default function Rooms() {
                                     </Link>
                                 </div>
                             </div>
+                            )}
                         </div>
                     );
                 })}

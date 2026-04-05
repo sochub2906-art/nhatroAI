@@ -281,19 +281,22 @@ export default function RoomMap({ buildingId }: RoomMapProps) {
                     const columns = floorRooms.length <= 3 ? floorRooms.length : Math.min(5, Math.max(2, Math.ceil(Math.sqrt(floorRooms.length * 1.35))));
                     const rows = Math.ceil(floorRooms.length / columns) || 1;
                     const baseMinHeight = Math.max(320, rows * 130);
+                    const baseMinWidth = Math.max(100, columns * 130); // Prevent overlapping
 
                     return (
                     <div key={floor} className="space-y-2">
                         <h3 className="border-b border-gray-200 pb-2 font-bold text-gray-500 dark:border-gray-800 dark:text-gray-400">Tầng {floor}</h3>
-                        <div
-                            ref={element => { containerRefs.current[floor] = element; }}
-                            className="relative w-full overflow-hidden rounded-xl border-2 border-dashed border-gray-300 bg-white touch-none transition-[height] duration-300 dark:border-gray-700 dark:bg-gray-900/50"
-                            style={{
-                                backgroundImage: `radial-gradient(${gridColor} 1px, transparent 1px)`,
-                                backgroundSize: '20px 20px',
-                                minHeight: `${baseMinHeight}px`,
-                            }}
-                        >
+                        <div className="w-full overflow-x-auto touch-manipulation pb-4">
+                            <div
+                                ref={element => { containerRefs.current[floor] = element; }}
+                                className="relative overflow-hidden rounded-xl border-2 border-dashed border-gray-300 bg-white touch-none transition-[height] duration-300 dark:border-gray-700 dark:bg-gray-900/50"
+                                style={{
+                                    backgroundImage: `radial-gradient(${gridColor} 1px, transparent 1px)`,
+                                    backgroundSize: '20px 20px',
+                                    minHeight: `${baseMinHeight}px`,
+                                    minWidth: `${baseMinWidth}px`,
+                                }}
+                            >
                             {floorRooms.map(room => {
                                 const occupancySummary = getOccupancySummary(room.id);
                                 const buildingName = buildingById.get(room.buildingId)?.name;
@@ -344,9 +347,11 @@ export default function RoomMap({ buildingId }: RoomMapProps) {
                                     </div>
                                 );
                             })}
+                            </div>
                         </div>
                     </div>
-                )})}
+                    );
+                })}
             </div>
 
             {floors.length === 0 && (

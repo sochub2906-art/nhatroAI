@@ -23,6 +23,8 @@ type DraftRow = {
     waterNew: number;
     internetCost: number;
     otherCost: number;
+    electricBillingType?: 'meter' | 'fixed';
+    waterBillingType?: 'meter' | 'fixed';
 };
 
 function normalizeNumber(value: number): number {
@@ -95,6 +97,8 @@ export default function BulkServiceReadingModal({ onClose }: BulkServiceReadingM
                     waterNew: 0,
                     internetCost: referenceContract?.internetPrice || 0,
                     otherCost: 0,
+                    electricBillingType: referenceContract?.electricBillingType || 'meter',
+                    waterBillingType: referenceContract?.waterBillingType || 'meter',
                 } satisfies DraftRow;
             })
             .sort(sortRooms);
@@ -139,6 +143,8 @@ export default function BulkServiceReadingModal({ onClose }: BulkServiceReadingM
                 waterNew: Math.max(waterOld, waterNew),
                 internetCost: normalizeNumber(currentRecord?.internetCost ?? room.internetCost),
                 otherCost: normalizeNumber(currentRecord?.otherCost ?? 0),
+                electricBillingType: room.electricBillingType,
+                waterBillingType: room.waterBillingType,
             };
         });
     }, [serviceRecords, sortedRooms]);
@@ -152,9 +158,12 @@ export default function BulkServiceReadingModal({ onClose }: BulkServiceReadingM
     const totals = React.useMemo(() => {
         return draftRows.reduce(
             (sum, row) => {
-                const electricUsage = Math.max(0, row.electricNew - row.electricOld);
-                const waterUsage = Math.max(0, row.waterNew - row.waterOld);
-                const total = electricUsage * row.electricPrice + waterUsage * row.waterPrice + row.internetCost + row.otherCost;
+                const electricUsage = row.electricBillingType === 'fixed' ? 0 : Math.max(0, row.electricNew - row.electricOld);
+                const waterUsage = row.waterBillingType === 'fixed' ? 0 : Math.max(0, row.waterNew - row.waterOld);
+                
+                const calcElectric = row.electricBillingType === 'fixed' ? row.electricPrice : (electricUsage * row.electricPrice);
+                const calcWater = row.waterBillingType === 'fixed' ? row.waterPrice : (waterUsage * row.waterPrice);
+                const total = calcElectric + calcWater + row.internetCost + row.otherCost;
 
                 return {
                     electricUsage: sum.electricUsage + electricUsage,
@@ -172,9 +181,12 @@ export default function BulkServiceReadingModal({ onClose }: BulkServiceReadingM
 
     const persistRows = (createBillsAfterSave: boolean) => {
         draftRows.forEach(row => {
-            const electricUsage = Math.max(0, row.electricNew - row.electricOld);
-            const waterUsage = Math.max(0, row.waterNew - row.waterOld);
-            const totalCost = electricUsage * row.electricPrice + waterUsage * row.waterPrice + row.internetCost + row.otherCost;
+            const electricUsage = row.electricBillingType === 'fixed' ? 0 : Math.max(0, row.electricNew - row.electricOld);
+            const waterUsage = row.waterBillingType === 'fixed' ? 0 : Math.max(0, row.waterNew - row.waterOld);
+            
+            const calcElectric = row.electricBillingType === 'fixed' ? row.electricPrice : (electricUsage * row.electricPrice);
+            const calcWater = row.waterBillingType === 'fixed' ? row.waterPrice : (waterUsage * row.waterPrice);
+            const totalCost = calcElectric + calcWater + row.internetCost + row.otherCost;
 
             addServiceRecord({
                 id: `SV_${row.roomId}_${period.replace(/\//g, '_')}`,
@@ -308,7 +320,8 @@ export default function BulkServiceReadingModal({ onClose }: BulkServiceReadingM
                                                         Phòng {row.roomName} · Tầng {row.floor}
                                                     </div>
                                                     <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                                                        Giá điện {formatCurrency(row.electricPrice)} · Giá nước {formatCurrency(row.waterPrice)}
+                                                        Điện: {row.electricBillingType === 'fixed' ? 'Khoán' : formatCurrency(row.electricPrice)} · 
+                                                        Nước: {row.waterBillingType === 'fixed' ? 'Khoán' : formatCurrency(row.waterPrice)}
                                                     </div>
                                                 </td>
                                                 <td className="px-4 py-4 text-sm text-slate-600 dark:text-slate-300">{row.occupants}</td>
@@ -316,45 +329,49 @@ export default function BulkServiceReadingModal({ onClose }: BulkServiceReadingM
                                                     <input
                                                         type="number"
                                                         min={0}
+                                                        disabled={row.electricBillingType === 'fixed'}
                                                         value={row.electricOld}
                                                         onChange={event => updateRow(row.roomId, { electricOld: normalizeNumber(Number(event.target.value)), electricNew: Math.max(normalizeNumber(Number(event.target.value)), row.electricNew) })}
-                                                        className="w-24 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                                                        className="w-24 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-100 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                                                     />
                                                 </td>
                                                 <td className="px-4 py-4">
                                                     <input
                                                         type="number"
                                                         min={row.electricOld}
+                                                        disabled={row.electricBillingType === 'fixed'}
                                                         value={row.electricNew}
                                                         onChange={event => updateRow(row.roomId, { electricNew: Math.max(row.electricOld, normalizeNumber(Number(event.target.value))) })}
-                                                        className="w-24 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                                                        className="w-24 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-100 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                                                     />
                                                 </td>
                                                 <td className="px-4 py-4">
-                                                    <div className="font-semibold text-slate-900 dark:text-white">{electricUsage}</div>
-                                                    <div className="text-xs text-slate-500 dark:text-slate-400">{formatCurrency(electricUsage * row.electricPrice)}</div>
+                                                    <div className="font-semibold text-slate-900 dark:text-white">{row.electricBillingType === 'fixed' ? 'Khoán' : electricUsage}</div>
+                                                    <div className="text-xs text-slate-500 dark:text-slate-400">{formatCurrency(row.electricBillingType === 'fixed' ? row.electricPrice : (electricUsage * row.electricPrice))}</div>
                                                 </td>
                                                 <td className="px-4 py-4">
                                                     <input
                                                         type="number"
                                                         min={0}
+                                                        disabled={row.waterBillingType === 'fixed'}
                                                         value={row.waterOld}
                                                         onChange={event => updateRow(row.roomId, { waterOld: normalizeNumber(Number(event.target.value)), waterNew: Math.max(normalizeNumber(Number(event.target.value)), row.waterNew) })}
-                                                        className="w-24 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                                                        className="w-24 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                                                     />
                                                 </td>
                                                 <td className="px-4 py-4">
                                                     <input
                                                         type="number"
                                                         min={row.waterOld}
+                                                        disabled={row.waterBillingType === 'fixed'}
                                                         value={row.waterNew}
                                                         onChange={event => updateRow(row.roomId, { waterNew: Math.max(row.waterOld, normalizeNumber(Number(event.target.value))) })}
-                                                        className="w-24 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                                                        className="w-24 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                                                     />
                                                 </td>
                                                 <td className="px-4 py-4">
-                                                    <div className="font-semibold text-slate-900 dark:text-white">{waterUsage}</div>
-                                                    <div className="text-xs text-slate-500 dark:text-slate-400">{formatCurrency(waterUsage * row.waterPrice)}</div>
+                                                    <div className="font-semibold text-slate-900 dark:text-white">{row.waterBillingType === 'fixed' ? 'Khoán' : waterUsage}</div>
+                                                    <div className="text-xs text-slate-500 dark:text-slate-400">{formatCurrency(row.waterBillingType === 'fixed' ? row.waterPrice : (waterUsage * row.waterPrice))}</div>
                                                 </td>
                                                 <td className="px-4 py-4">
                                                     <input
@@ -376,7 +393,9 @@ export default function BulkServiceReadingModal({ onClose }: BulkServiceReadingM
                                                 </td>
                                                 <td className="px-4 py-4 text-right">
                                                     <div className="font-semibold text-slate-900 dark:text-white">{formatCurrency(total)}</div>
-                                                    <div className="text-xs text-slate-500 dark:text-slate-400">Tự tính theo chênh lệch</div>
+                                                    <div className="text-xs text-slate-500 dark:text-slate-400">
+                                                        {row.electricBillingType === 'fixed' || row.waterBillingType === 'fixed' ? 'Bao gồm tiền khoán' : 'Tự tính theo chênh lệch'}
+                                                    </div>
                                                 </td>
                                             </tr>
                                         );

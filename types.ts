@@ -187,7 +187,9 @@ export interface Contract {
     durationMonths: number;
     price: number;
     electricPrice: number;
+    electricBillingType?: 'meter' | 'fixed';
     waterPrice: number;
+    waterBillingType?: 'meter' | 'fixed';
     internetPrice: number;
     extraServices?: ContractService[];
     isActive: boolean;

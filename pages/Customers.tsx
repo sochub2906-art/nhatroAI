@@ -8,6 +8,7 @@ import BulkImportModal from '../components/BulkImportModal';
 import { useApp } from '../AppContext';
 import { applyCustomerQrData, createCustomerDraft, type CustomerDraft } from '../utils/customerIdentity';
 import { downloadResidenceDeclarationFile } from '../utils/residenceDeclaration';
+import SmartDateInput from '../components/SmartDateInput';
 
 export default function Customers() {
     const { customers, contracts, rooms, buildings, currentUser, addCustomer, updateCustomer, deleteCustomer, terminateContract } = useApp();
@@ -336,13 +337,13 @@ export default function Customers() {
                                 <div className="mb-4 text-sm font-semibold text-slate-900 dark:text-white">Thông tin CCCD</div>
                                 <div className="grid gap-4 md:grid-cols-3">
                                     <input value={newCustomer.idNumber || ''} onChange={event => setNewCustomer(prev => ({ ...prev, idNumber: event.target.value }))} placeholder="Số CCCD" className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white" />
-                                    <input type="date" lang="vi-VN" value={newCustomer.dateOfBirth || ''} onChange={event => setNewCustomer(prev => ({ ...prev, dateOfBirth: event.target.value }))} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white" />
+                                    <SmartDateInput value={newCustomer.dateOfBirth || ''} onChange={value => setNewCustomer(prev => ({ ...prev, dateOfBirth: value }))} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white" />
                                     <select value={newCustomer.gender || 'Nam'} onChange={event => setNewCustomer(prev => ({ ...prev, gender: event.target.value as CustomerDraft['gender'] }))} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
                                         <option value="Nam">Nam</option>
                                         <option value="Nữ">Nữ</option>
                                         <option value="Khác">Khác</option>
                                     </select>
-                                    <input type="date" lang="vi-VN" value={newCustomer.idIssueDate || ''} onChange={event => setNewCustomer(prev => ({ ...prev, idIssueDate: event.target.value }))} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white" />
+                                    <SmartDateInput value={newCustomer.idIssueDate || ''} onChange={value => setNewCustomer(prev => ({ ...prev, idIssueDate: value }))} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white" />
                                     <input value={newCustomer.idIssuePlace || ''} onChange={event => setNewCustomer(prev => ({ ...prev, idIssuePlace: event.target.value }))} placeholder="Nơi cấp" className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white" />
                                     <input value={newCustomer.nationality || 'Việt Nam'} onChange={event => setNewCustomer(prev => ({ ...prev, nationality: event.target.value }))} placeholder="Quốc tịch" className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white" />
                                 </div>

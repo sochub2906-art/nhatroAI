@@ -5,6 +5,7 @@ import { Contract, Customer } from '../types';
 import CCCDScannerModal from './CCCDScannerModal';
 import { applyCustomerQrData } from '../utils/customerIdentity';
 import { getRoomOccupancyCount } from '../utils/roomOccupancy';
+import SmartDateInput from './SmartDateInput';
 
 interface Props {
     onClose: () => void;
@@ -199,11 +200,10 @@ export default function QuickContractWizard({ onClose, initialRoomId = '' }: Pro
                                     </div>
                                     <div>
                                         <label className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">NgÃ y cáº¥p</label>
-                                        <input
-                                            type="date" lang="vi-VN"
+                                        <SmartDateInput
                                             className="w-full rounded-lg border border-slate-200 bg-white p-2 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                                             value={customer.idIssueDate}
-                                            onChange={event => setCustomer({ ...customer, idIssueDate: event.target.value })}
+                                            onChange={value => setCustomer({ ...customer, idIssueDate: value })}
                                         />
                                     </div>
                                     <div>
@@ -243,12 +243,11 @@ export default function QuickContractWizard({ onClose, initialRoomId = '' }: Pro
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
                                             <label className="mb-1 block text-sm text-slate-500">NgÃ y báº¯t Ä‘áº§u</label>
-                                            <input
+                                            <SmartDateInput
                                                 required
-                                                type="date" lang="vi-VN"
                                                 className="w-full rounded-xl border border-slate-300 bg-slate-50 p-2.5 outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800"
                                                 value={contract.startDate}
-                                                onChange={event => setContract({ ...contract, startDate: event.target.value })}
+                                                onChange={value => setContract({ ...contract, startDate: value })}
                                             />
                                         </div>
                                         <div>

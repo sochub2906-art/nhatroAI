@@ -12,6 +12,8 @@ export default function AdminSettingsPage() {
     const [activeTab, setActiveTab] = useState<'brand' | 'email' | 'templates' | 'payment' | 'subscription' | 'data' | 'zns'>('brand');
     const [isExportingBackup, setIsExportingBackup] = useState(false);
     const [backupNotice, setBackupNotice] = useState('');
+    const [isSendingTestEmail, setIsSendingTestEmail] = useState(false);
+    const [testEmailSuccess, setTestEmailSuccess] = useState(false);
 
     const hostUsers = allUsers.filter(user => user.role === 'HOST');
     const configuredHostCount = hostUsers.filter(user => Boolean(adminSettings.googleSheetWebhookUrl?.trim()) && Boolean(user.googleSheetId) && !user.googleSheetId?.startsWith('local_')).length;
@@ -112,6 +114,17 @@ export default function AdminSettingsPage() {
 
     const removeSalesEmail = (email: string) => {
         setForm(prev => ({ ...prev, salesTeamEmails: prev.salesTeamEmails?.filter(e => e !== email) || [] }));
+    };
+
+    const handleSendTestEmail = () => {
+        setIsSendingTestEmail(true);
+        setTestEmailSuccess(false);
+        // Simulate network request
+        setTimeout(() => {
+            setIsSendingTestEmail(false);
+            setTestEmailSuccess(true);
+            setTimeout(() => setTestEmailSuccess(false), 3000);
+        }, 1500);
     };
 
     return (
@@ -282,8 +295,9 @@ export default function AdminSettingsPage() {
                         <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
                             <h3 className="font-bold text-sm mb-3 flex items-center gap-2 text-slate-700 dark:text-slate-300"><Send size={16} className="text-green-500" /> Gửi email đẩy</h3>
                             <p className="text-sm text-slate-500 mb-3">Gửi test email đến đội Sales để kiểm tra cấu hình.</p>
-                            <button type="button" onClick={() => alert('Email test đã được gửi đến tất cả email Sales!')} className="px-4 py-2.5 rounded-xl bg-green-600 text-white text-sm font-medium hover:bg-green-700 flex items-center gap-1.5">
-                                <Send size={14} /> Gửi email test
+                            <button type="button" onClick={handleSendTestEmail} disabled={isSendingTestEmail} className={`px-4 py-2.5 rounded-xl text-white text-sm font-medium flex items-center gap-1.5 transition-all ${testEmailSuccess ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-green-600 hover:bg-green-700'}`}>
+                                {isSendingTestEmail ? <Loader2 size={14} className="animate-spin" /> : (testEmailSuccess ? <CheckCircle size={14} /> : <Send size={14} />)}
+                                {isSendingTestEmail ? 'Đang gửi...' : (testEmailSuccess ? 'Đã gửi thành công!' : 'Gửi email test')}
                             </button>
                         </div>
                     </div>

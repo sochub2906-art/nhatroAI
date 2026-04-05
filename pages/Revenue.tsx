@@ -4,6 +4,7 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 import { ArrowLeft, Building2, Download, ExternalLink, ReceiptText, RefreshCw, TrendingUp, Wallet, X, Calendar, ChevronRight, Info } from 'lucide-react';
 import { formatCurrency, useApp } from '../AppContext';
 import { createHostFinancialSnapshot } from '../utils/hostAnalytics';
+import SmartDateInput from '../components/SmartDateInput';
 
 function monthKey(date: Date) {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
@@ -347,19 +348,17 @@ export default function Revenue() {
                         <div className="flex flex-col gap-4 mb-8">
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Từ ngày</label>
-                                <input 
-                                    type="date" 
+                                <SmartDateInput 
                                     value={exportDateRange.start} 
-                                    onChange={e => setExportDateRange(prev => ({ ...prev, start: e.target.value }))}
+                                    onChange={value => setExportDateRange(prev => ({ ...prev, start: value }))}
                                     className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                                 />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Đến ngày</label>
-                                <input 
-                                    type="date" 
+                                <SmartDateInput 
                                     value={exportDateRange.end} 
-                                    onChange={e => setExportDateRange(prev => ({ ...prev, end: e.target.value }))}
+                                    onChange={value => setExportDateRange(prev => ({ ...prev, end: value }))}
                                     className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                                 />
                             </div>

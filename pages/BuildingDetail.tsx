@@ -5,6 +5,7 @@ import RoomMap from './RoomMap';
 import { MapPin, Users, DollarSign, Calendar, AlertTriangle, ArrowLeft, Wrench, Plus, Edit, Trash2, CheckCircle } from 'lucide-react';
 import { Equipment } from '../types';
 import { formatDateVN } from '../utils/dateFormat';
+import SmartDateInput from '../components/SmartDateInput';
 
 export default function BuildingDetail() {
   const { id } = useParams<{ id: string }>();
@@ -305,7 +306,7 @@ export default function BuildingDetail() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Ngày mua</label>
-                  <input type="date" lang="vi-VN" className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 outline-none focus:ring-2 focus:ring-blue-500" value={eqForm.purchaseDate} onChange={e => setEqForm({ ...eqForm, purchaseDate: e.target.value })} />
+                  <SmartDateInput className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 outline-none focus:ring-2 focus:ring-blue-500" value={eqForm.purchaseDate} onChange={value => setEqForm({ ...eqForm, purchaseDate: value })} />
                 </div>
               </div>
               <div className="flex gap-3 pt-2">
