@@ -173,7 +173,10 @@ export default function Contracts() {
                         <div className="mt-4 space-y-2 text-sm text-slate-600 dark:text-slate-300">
                             <div>Khách thuê: <Link to={`/app/customers/${contract.customerId}`} className="font-medium text-blue-600 dark:text-blue-400">{getCustomerName(contract.customerId)}</Link></div>
                             <div>Ngày vào: {contract.startDate} — Hết hạn: {contract.endDate || 'Chưa xác định'}</div>
-                            <div className="text-lg font-semibold text-blue-600 dark:text-blue-400">{formatCurrency(contract.price)}/tháng</div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-lg font-semibold text-blue-600 dark:text-blue-400">{formatCurrency(contract.price)}/tháng</span>
+                                {contract.depositAmount ? <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">Cọc: {formatCurrency(contract.depositAmount)}</span> : null}
+                            </div>
                             {contract.extraServices && contract.extraServices.filter(s => s.enabled).length > 0 && (
                                 <div className="flex flex-wrap gap-1.5 pt-1">
                                     {contract.extraServices.filter(s => s.enabled).map(service => (
@@ -185,15 +188,15 @@ export default function Contracts() {
                             )}
                         </div>
                         <div className="mt-4 flex gap-2">
-                            <button type="button" onClick={(e) => { e.stopPropagation(); handlePrintContract(contract); }} title="In" className="inline-flex min-h-[48px] items-center justify-center rounded-2xl border border-blue-200 px-4 py-3 text-sm font-medium text-blue-600 transition hover:bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/40">
-                                <Printer className="h-4 w-4" />
+                            <button type="button" onClick={(e) => { e.stopPropagation(); handlePrintContract(contract); }} title="In" className="inline-flex min-h-[48px] items-center justify-center gap-1.5 rounded-2xl border border-blue-200 px-4 py-3 text-sm font-medium text-blue-600 transition hover:bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/40">
+                                <Printer className="h-4 w-4" /> <span className="hidden sm:inline">In</span>
                             </button>
                             <button type="button" onClick={() => handleOpenEdit(contract)} className="flex-1 min-h-[48px] rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
-                                Chỉnh sửa
+                                Sửa
                             </button>
                             {contract.isActive && (
-                                <button type="button" onClick={() => terminateContract(contract.id)} className="inline-flex min-h-[48px] items-center justify-center rounded-2xl border border-rose-200 px-5 py-3 text-sm font-medium text-rose-600 transition hover:bg-rose-50 dark:border-rose-900/30 dark:text-rose-300 dark:hover:bg-rose-950/20">
-                                    <XCircle className="mr-1.5 h-4 w-4" />
+                                <button type="button" onClick={() => terminateContract(contract.id)} className="inline-flex min-h-[48px] items-center justify-center gap-1.5 rounded-2xl border border-rose-200 px-5 py-3 text-sm font-medium text-rose-600 transition hover:bg-rose-50 dark:border-rose-900/30 dark:text-rose-300 dark:hover:bg-rose-950/20 text-center">
+                                    <XCircle className="h-4 w-4" /> Ngừng
                                 </button>
                             )}
                         </div>
@@ -208,7 +211,9 @@ export default function Contracts() {
                     <div key={contract.id} onClick={() => handleOpenEdit(contract)} className="flex cursor-pointer items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm transition hover:bg-slate-50 active:bg-slate-100 dark:border-slate-800 dark:bg-slate-900 dark:hover:bg-slate-800">
                         <div className="min-w-0 flex-1">
                             <div className="truncate font-semibold text-slate-900 dark:text-white">{getRoomName(contract.roomId)} — {getCustomerName(contract.customerId)}</div>
-                            <div className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">{contract.id} • {formatCurrency(contract.price)}/tháng</div>
+                            <div className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">
+                                {contract.id} • Giá: {formatCurrency(contract.price)}/tháng {contract.depositAmount ? ` • Cọc: ${formatCurrency(contract.depositAmount)}` : ''}
+                            </div>
                         </div>
                         <span className={`inline-flex shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium ${contract.isActive ? 'border-green-200 bg-green-50 text-green-600 dark:border-green-800 dark:bg-green-900/20' : 'border-red-200 bg-red-50 text-red-500 dark:border-red-800 dark:bg-red-900/20'}`}>
                             {contract.isActive ? 'Hiệu lực' : 'Hết hạn'}
@@ -228,7 +233,7 @@ export default function Contracts() {
                                 <th className="px-5 py-4">Khách thuê</th>
                                 <th className="px-5 py-4">Ngày vào</th>
                                 <th className="px-5 py-4">Hết hạn</th>
-                                <th className="px-5 py-4">Giá thuê</th>
+                                <th className="px-5 py-4">Giá thuê & Cọc</th>
                                 <th className="px-5 py-4">Dịch vụ phụ</th>
                                 <th className="px-5 py-4">Trạng thái</th>
                                 <th className="px-5 py-4 text-right">Thao tác</th>
@@ -253,6 +258,7 @@ export default function Contracts() {
                                     <td className="px-5 py-4 font-medium text-blue-500">
                                         <div className="flex flex-col">
                                             <span>{formatCurrency(contract.price)}</span>
+                                            {contract.depositAmount ? <span className="mt-0.5 text-[11px] text-emerald-600 dark:text-emerald-400">Cọc: {formatCurrency(contract.depositAmount)}</span> : null}
                                             <div className="flex gap-1.5 pt-1 text-[10px] whitespace-nowrap">
                                                 <span className={contract.electricBillingType === 'fixed' ? 'text-amber-600' : 'text-slate-400'}>
                                                     Đ: {formatCurrency(contract.electricPrice)}{contract.electricBillingType === 'fixed' ? ' (K)' : ''}
@@ -380,15 +386,26 @@ export default function Contracts() {
 
                                 <div className="space-y-4">
                                     <h4 className="border-b border-slate-100 pb-2 font-semibold text-amber-500 dark:border-slate-800">Chi phí cơ bản</h4>
-                                    <div>
-                                        <label className="mb-1 block text-sm text-slate-500">Giá thuê phòng / tháng</label>
-                                        <input
-                                            required
-                                            type="number"
-                                            className="w-full rounded-xl border border-slate-300 bg-slate-50 p-2.5 outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800"
-                                            value={form.price}
-                                            onChange={event => setForm({ ...form, price: +event.target.value })}
-                                        />
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="mb-1 block text-sm text-slate-500">Giá thuê / tháng</label>
+                                            <input
+                                                required
+                                                type="number"
+                                                className="w-full rounded-xl border border-slate-300 bg-slate-50 p-2.5 outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800"
+                                                value={form.price}
+                                                onChange={event => setForm({ ...form, price: +event.target.value })}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="mb-1 block text-sm text-slate-500">Tiền cọc (VNĐ)</label>
+                                            <input
+                                                type="number"
+                                                className="w-full rounded-xl border border-slate-300 bg-slate-50 p-2.5 outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800"
+                                                value={form.depositAmount || 0}
+                                                onChange={event => setForm({ ...form, depositAmount: +event.target.value })}
+                                            />
+                                        </div>
                                     </div>
                                     
                                     {/* Electricity Billing */}

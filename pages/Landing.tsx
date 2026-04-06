@@ -1,34 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, BarChart3, CheckCircle, ChevronRight, Menu, Smartphone, X, Zap } from 'lucide-react';
+import { 
+  ArrowRight, BarChart3, CheckCircle, ChevronRight, Menu, Smartphone, X, Zap, 
+  Shield, Users, MessageSquare, Calculator, FileText, CheckCircle2, XCircle, 
+  HelpCircle, Star, TrendingUp, Clock, MousePointer2
+} from 'lucide-react';
 import { useApp } from '../AppContext';
 import LandingFooter from '../components/LandingFooter';
 
 const DEFAULT_BG = 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=1920&q=80';
-
-const features = [
-  {
-    icon: BarChart3,
-    iconClassName: 'text-blue-300',
-    iconWrapClassName: 'bg-blue-500/10 ring-1 ring-blue-400/20',
-    title: 'Quản lý toàn diện',
-    description: 'Theo dõi trạng thái phòng, thông tin khách thuê, hợp đồng và lịch sử ra vào chi tiết.'
-  },
-  {
-    icon: Zap,
-    iconClassName: 'text-cyan-300',
-    iconWrapClassName: 'bg-cyan-500/10 ring-1 ring-cyan-400/20',
-    title: 'Tự động hóa',
-    description: 'Tự động chốt công nợ hàng tháng, tính toán điện nước và cập nhật trạng thái hợp đồng.'
-  },
-  {
-    icon: Smartphone,
-    iconClassName: 'text-emerald-300',
-    iconWrapClassName: 'bg-emerald-500/10 ring-1 ring-emerald-400/20',
-    title: 'Nhắc nợ thông minh',
-    description: 'Gửi tin nhắn nhắc đóng tiền qua Zalo và Email tự động đến khách thuê khi đến hạn.'
-  }
-];
 
 export default function Landing() {
   const navigate = useNavigate();
@@ -37,12 +17,13 @@ export default function Landing() {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [formData, setFormData] = useState({ name: '', phone: '', needs: '' });
   const [submitted, setSubmitted] = useState(false);
+  
   const bgUrl = adminSettings?.landingBackgroundUrl || DEFAULT_BG;
   const logoUrl = adminSettings?.logoUrl;
-  const brandName = adminSettings?.companyInfo?.name || 'Smart Rental';
+  const brandName = adminSettings?.companyInfo?.name || 'NhatroAI';
 
-  // Dynamic favicon
   useEffect(() => {
+    document.title = "NhatroAI - Phần mềm quản lý nhà trọ thông minh số 1 Việt Nam";
     if (adminSettings?.faviconUrl) {
       let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
       if (!link) {
@@ -54,20 +35,15 @@ export default function Landing() {
     }
   }, [adminSettings?.faviconUrl]);
 
-  const openHostLogin = () => {
-    setShowMobileMenu(false);
-    navigate('/login?role=HOST');
-  };
-
   const handleLeadSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     addLead({
       customerName: formData.name,
       phone: formData.phone,
-      needs: formData.needs || 'Tư vấn giải pháp quản lý'
+      needs: formData.needs || 'Tư vấn giải pháp NhatroAI'
     });
     setSubmitted(true);
-    window.setTimeout(() => {
+    setTimeout(() => {
       setShowRegForm(false);
       setSubmitted(false);
       setFormData({ name: '', phone: '', needs: '' });
@@ -75,72 +51,49 @@ export default function Landing() {
   };
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[#060b17] text-slate-100 selection:bg-blue-500 selection:text-white">
+    <div className="min-h-screen overflow-x-hidden bg-[#020617] text-slate-100 selection:bg-blue-500 selection:text-white font-sans">
+      
+      {/* Registration Modal */}
       {showRegForm && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/70 p-4 backdrop-blur-md">
-          <div className="relative w-full max-w-md rounded-[28px] border border-white/10 bg-slate-950/95 p-8 shadow-[0_32px_120px_rgba(15,23,42,0.65)]">
-            <button
-              type="button"
-              onClick={() => setShowRegForm(false)}
-              className="absolute right-4 top-4 rounded-full border border-white/10 p-2 text-slate-400 transition hover:border-white/20 hover:text-white"
-            >
-              <X size={18} />
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
+          <div className="relative w-full max-w-md rounded-[2rem] border border-white/10 bg-slate-900 p-8 shadow-2xl">
+            <button onClick={() => setShowRegForm(false)} className="absolute right-6 top-6 text-slate-400 hover:text-white transition">
+              <X size={24} />
             </button>
-
             {submitted ? (
-              <div className="space-y-4 py-10 text-center">
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-400/20">
-                  <CheckCircle size={32} />
-                </div>
-                <h3 className="text-2xl font-bold text-white">Gửi yêu cầu thành công!</h3>
-                <p className="text-sm leading-6 text-slate-400">
-                  Chúng tôi sẽ liên hệ với bạn trong vòng 24 giờ tới.
-                </p>
+              <div className="text-center py-12">
+                <CheckCircle className="mx-auto text-emerald-400 mb-4" size={56} />
+                <h3 className="text-2xl font-bold mb-2">Thành công!</h3>
+                <p className="text-slate-400">Đội ngũ NhatroAI sẽ liên hệ tư vấn cho bạn ngay.</p>
               </div>
             ) : (
               <>
-                <h2 className="text-2xl font-bold text-white">Đăng ký tư vấn</h2>
-                <p className="mt-2 text-sm leading-6 text-slate-400">
-                  Để lại thông tin, chúng tôi sẽ demo và hỗ trợ bạn thiết lập hệ thống nhanh chóng.
-                </p>
-
-                <form onSubmit={handleLeadSubmit} className="mt-6 space-y-4">
-                  <div>
-                    <label className="mb-1 block text-sm font-medium text-slate-200">Họ và tên</label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      placeholder="Nguyễn Văn A"
-                      className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition placeholder:text-slate-500 focus:border-blue-400/60 focus:bg-white/10 focus:ring-2 focus:ring-blue-500/20"
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-sm font-medium text-slate-200">Số điện thoại</label>
-                    <input
-                      type="tel"
-                      required
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      placeholder="09xx xxx xxx"
-                      className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition placeholder:text-slate-500 focus:border-blue-400/60 focus:bg-white/10 focus:ring-2 focus:ring-blue-500/20"
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-sm font-medium text-slate-200">Nhu cầu cụ thể</label>
-                    <textarea
-                      value={formData.needs}
-                      onChange={(e) => setFormData({ ...formData, needs: e.target.value })}
-                      placeholder="VD: Quản lý 20 phòng tại Cầu Giấy..."
-                      className="h-28 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition placeholder:text-slate-500 focus:border-blue-400/60 focus:bg-white/10 focus:ring-2 focus:ring-blue-500/20"
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    className="w-full rounded-2xl bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-400 px-5 py-4 font-semibold text-white shadow-[0_20px_60px_rgba(37,99,235,0.35)] transition hover:translate-y-[-1px] hover:shadow-[0_24px_70px_rgba(37,99,235,0.45)]"
-                  >
-                    Gửi thông tin đăng ký
+                <h2 className="text-2xl font-bold mb-2">Trải nghiệm NhatroAI miễn phí</h2>
+                <p className="text-slate-400 text-sm mb-6">Để lại thông tin, chúng tôi sẽ hỗ trợ tài khoản dùng thử ngay lập tức.</p>
+                <form onSubmit={handleLeadSubmit} className="space-y-4">
+                  <input 
+                    required 
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 transition" 
+                    placeholder="Họ và tên của bạn"
+                    value={formData.name}
+                    onChange={e => setFormData({...formData, name: e.target.value})}
+                  />
+                  <input 
+                    required 
+                    type="tel"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 transition" 
+                    placeholder="Số điện thoại"
+                    value={formData.phone}
+                    onChange={e => setFormData({...formData, phone: e.target.value})}
+                  />
+                  <textarea 
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 transition h-24" 
+                    placeholder="Ghi chú thêm về quy mô nhà trọ (số phòng)..."
+                    value={formData.needs}
+                    onChange={e => setFormData({...formData, needs: e.target.value})}
+                  />
+                  <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-500/20 transition transform hover:-translate-y-1">
+                    Gửi yêu cầu tư vấn
                   </button>
                 </form>
               </>
@@ -149,283 +102,327 @@ export default function Landing() {
         </div>
       )}
 
-      <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute left-[-12%] top-[-8%] h-[32rem] w-[32rem] rounded-full bg-blue-500/18 blur-3xl" />
-        <div className="absolute right-[-14%] top-[10%] h-[28rem] w-[28rem] rounded-full bg-cyan-400/14 blur-3xl" />
-        <div className="absolute bottom-[-18%] left-[22%] h-[26rem] w-[26rem] rounded-full bg-indigo-500/14 blur-3xl" />
-      </div>
-
-      <header className="relative isolate">
-        <div className="absolute inset-0">
-          <img
-            src={bgUrl}
-            alt=""
-            className="h-full w-full object-cover opacity-20"
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = DEFAULT_BG;
-            }}
-          />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.24),transparent_28%),linear-gradient(180deg,rgba(6,11,23,0.6)_0%,rgba(6,11,23,0.9)_55%,#060b17_100%)]" />
-          <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-[#060b17]" />
-        </div>
-
-        <nav className="relative z-20 border-b border-white/10 bg-slate-950/70 backdrop-blur-xl">
-          <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 lg:px-8">
-            <button
-              type="button"
-              onClick={() => navigate('/')}
-              className="text-left"
-            >
-              {logoUrl ? (
-                <img src={logoUrl} alt={brandName} className="h-10 max-w-[180px] object-contain" />
-              ) : (
-                <span className="text-3xl font-black tracking-tight text-transparent bg-gradient-to-r from-blue-400 via-cyan-300 to-indigo-300 bg-clip-text">
-                  {brandName}
+      {/* Navigation */}
+      <nav className="fixed top-0 w-full z-[100] border-b border-white/5 bg-slate-950/60 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+          <div className="flex items-center gap-10">
+            <button onClick={() => navigate('/')} className="flex items-center gap-2">
+              {logoUrl ? <img src={logoUrl} className="h-8" alt="NhatroAI" /> : (
+                <span className="text-2xl font-black bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                  NhatroAI
                 </span>
               )}
             </button>
-
-            <div className="hidden items-center gap-8 lg:flex">
-              <button
-                type="button"
-                onClick={() => navigate('/pricing')}
-                className="text-sm font-semibold text-slate-200 transition hover:text-white"
-              >
-                Bảng giá
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate('/demo')}
-                className="text-sm font-semibold text-slate-200 transition hover:text-white"
-              >
-                Xem Demo
-              </button>
-              <button
-                type="button"
-                onClick={openHostLogin}
-                className="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:border-blue-300/40 hover:bg-white/10"
-              >
-                Đăng nhập Host
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowRegForm(true)}
-                className="rounded-full bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-400 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_18px_45px_rgba(37,99,235,0.28)] transition hover:translate-y-[-1px]"
-              >
-                Đăng ký ngay
-              </button>
+            <div className="hidden lg:flex items-center gap-8 text-sm font-medium text-slate-400">
+              <button onClick={() => navigate('/phan-mem-quan-ly-nha-tro')} className="hover:text-white transition">Giải pháp</button>
+              <button onClick={() => navigate('/pricing')} className="hover:text-white transition">Bảng giá</button>
+              <button onClick={() => navigate('/demo')} className="hover:text-white transition">Demo</button>
             </div>
-
-            <button
-              type="button"
-              onClick={() => setShowMobileMenu((prev) => !prev)}
-              className="inline-flex rounded-full border border-white/10 bg-white/5 p-2 text-white transition hover:bg-white/10 lg:hidden"
-            >
-              {showMobileMenu ? <X size={20} /> : <Menu size={20} />}
+          </div>
+          <div className="hidden lg:flex items-center gap-4">
+            <button onClick={() => navigate('/login?role=HOST')} className="text-sm font-semibold hover:text-blue-400 transition pr-4 border-r border-white/10">Đăng nhập</button>
+            <button onClick={() => setShowRegForm(true)} className="bg-white text-slate-950 px-6 py-2.5 rounded-full text-sm font-bold hover:bg-slate-200 transition">
+              Dùng thử miễn phí
             </button>
           </div>
-
-          {showMobileMenu && (
-            <div className="border-t border-white/10 bg-slate-950/95 px-5 pb-5 pt-4 lg:hidden">
-              <div className="flex flex-col gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowMobileMenu(false);
-                    navigate('/pricing');
-                  }}
-                  className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left text-sm font-semibold text-white transition hover:bg-white/10"
-                >
-                  Bảng giá
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowMobileMenu(false);
-                    navigate('/demo');
-                  }}
-                  className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left text-sm font-semibold text-white transition hover:bg-white/10"
-                >
-                  Xem Demo
-                </button>
-                <button
-                  type="button"
-                  onClick={openHostLogin}
-                  className="rounded-2xl border border-blue-400/25 bg-blue-500/10 px-4 py-3 text-left text-sm font-semibold text-white transition hover:bg-blue-500/15"
-                >
-                  Đăng nhập Host
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowMobileMenu(false);
-                    setShowRegForm(true);
-                  }}
-                  className="rounded-2xl bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-400 px-4 py-3 text-left text-sm font-semibold text-white shadow-[0_18px_45px_rgba(37,99,235,0.28)]"
-                >
-                  Đăng ký ngay
-                </button>
-              </div>
-            </div>
-          )}
-        </nav>
-
-        <div className="relative z-10 mx-auto grid max-w-7xl gap-12 px-5 pb-20 pt-16 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:px-8 lg:pb-28 lg:pt-24">
-          <div className="max-w-3xl">
-            <div className="inline-flex items-center rounded-full border border-blue-400/20 bg-blue-500/10 px-4 py-2 text-sm font-semibold text-blue-200 backdrop-blur-sm">
-              Giải pháp quản lý số 1 Việt Nam
-            </div>
-
-            <h1 className="mt-8 text-5xl font-black leading-[0.95] tracking-[-0.04em] text-white sm:text-6xl lg:text-[5.5rem]">
-              Nền tảng quản lý nhà trọ thông minh & hiệu quả
-            </h1>
-
-            <p className="mt-8 max-w-2xl text-lg leading-8 text-slate-300 sm:text-xl">
-              Tự động hóa quy trình quản lý, kiểm soát công nợ, hợp đồng và khách thuê. Tiết kiệm 90% thời gian vận hành hàng tháng.
-            </p>
-
-            <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:flex-wrap">
-              <button
-                type="button"
-                onClick={() => navigate('/login')}
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-400 px-7 py-4 text-base font-semibold text-white shadow-[0_22px_60px_rgba(37,99,235,0.35)] transition hover:translate-y-[-1px]"
-              >
-                Bắt đầu miễn phí
-                <ChevronRight className="h-5 w-5" />
-              </button>
-              <button
-                type="button"
-                onClick={openHostLogin}
-                className="inline-flex items-center justify-center gap-2 rounded-full border border-white/15 bg-white/5 px-7 py-4 text-base font-semibold text-white transition hover:border-blue-300/40 hover:bg-white/10"
-              >
-                Đăng nhập Host
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowRegForm(true)}
-                className="inline-flex items-center justify-center rounded-full border border-white/10 bg-slate-900/70 px-7 py-4 text-base font-semibold text-white transition hover:border-white/20 hover:bg-slate-800/80"
-              >
-                Nhận tư vấn ngay
-              </button>
-            </div>
-
-            <div className="mt-12 grid gap-4 sm:grid-cols-2">
-              <div className="rounded-[28px] border border-white/10 bg-white/5 p-5 backdrop-blur-xl">
-                <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-400">Tiết kiệm</p>
-                <p className="mt-3 text-3xl font-black text-white">90%</p>
-                <p className="mt-2 text-sm leading-6 text-slate-300">Tiết kiệm 90% thời gian vận hành hàng tháng.</p>
-              </div>
-              <div className="rounded-[28px] border border-white/10 bg-white/5 p-5 backdrop-blur-xl">
-                <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-400">Đang sử dụng</p>
-                <p className="mt-3 text-3xl font-black text-white">5000+</p>
-                <p className="mt-2 text-sm leading-6 text-slate-300">
-                  Tham gia cùng hơn 5000+ chủ nhà trọ đang sử dụng Smart Rental Manager.
-                </p>
-              </div>
-            </div>
+          <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="lg:hidden text-white">
+            {showMobileMenu ? <X /> : <Menu />}
+          </button>
+        </div>
+        {/* Mobile Menu */}
+        {showMobileMenu && (
+          <div className="lg:hidden border-t border-white/5 bg-slate-950 p-6 space-y-4">
+            <button onClick={() => navigate('/phan-mem-quan-ly-nha-tro')} className="block w-full text-left py-2">Tính năng</button>
+            <button onClick={() => navigate('/pricing')} className="block w-full text-left py-2">Bảng giá</button>
+            <button onClick={() => navigate('/login?role=HOST')} className="block w-full text-left py-2">Đăng nhập</button>
+            <button onClick={() => setShowRegForm(true)} className="w-full bg-blue-600 py-3 rounded-xl font-bold">Bắt đầu ngay</button>
           </div>
+        )}
+      </nav>
 
-          <div className="relative">
-            <div className="absolute -left-6 top-10 hidden h-32 w-32 rounded-full bg-cyan-400/20 blur-3xl lg:block" />
-            <div className="absolute -right-6 bottom-10 hidden h-32 w-32 rounded-full bg-blue-500/20 blur-3xl lg:block" />
-
-            <div className="relative overflow-hidden rounded-[32px] border border-white/10 bg-slate-950/80 p-5 shadow-[0_32px_90px_rgba(2,6,23,0.6)] backdrop-blur-xl sm:p-6">
-              <div className="absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
-              <div className="flex items-center justify-between border-b border-white/10 pb-5">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Smart Rental</p>
-                  <p className="mt-2 text-2xl font-bold text-white">Nền tảng quản lý nhà trọ thông minh & hiệu quả</p>
-                </div>
-                <div className="hidden rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-slate-300 sm:inline-flex">
-                  Giải pháp quản lý số 1 Việt Nam
-                </div>
-              </div>
-
-              <div className="mt-6 space-y-4">
-                {features.map((feature) => {
-                  const Icon = feature.icon;
-                  return (
-                    <div
-                      key={feature.title}
-                      className="rounded-[26px] border border-white/10 bg-white/[0.04] p-5 transition hover:border-white/15 hover:bg-white/[0.06]"
-                    >
-                      <div className="flex items-start gap-4">
-                        <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${feature.iconWrapClassName}`}>
-                          <Icon className={`h-6 w-6 ${feature.iconClassName}`} />
-                        </div>
-                        <div>
-                          <h2 className="text-xl font-bold text-white">{feature.title}</h2>
-                          <p className="mt-2 text-sm leading-6 text-slate-300">{feature.description}</p>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="mt-6 rounded-[26px] border border-blue-400/15 bg-gradient-to-br from-blue-500/12 via-cyan-400/10 to-transparent p-5">
-                <p className="text-sm leading-7 text-slate-200">
-                  Tự động hóa quy trình quản lý, kiểm soát công nợ, hợp đồng và khách thuê. Tiết kiệm 90% thời gian vận hành hàng tháng.
-                </p>
-              </div>
-            </div>
+      {/* Hero Section */}
+      <header className="relative pt-40 pb-20 lg:pt-56 lg:pb-32 overflow-hidden">
+        <div className="absolute inset-0 z-0">
+          <img src={bgUrl} alt="Hero" className="w-full h-full object-cover opacity-10" />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#020617]/80 to-[#020617]" />
+        </div>
+        <div className="relative z-10 max-w-7xl mx-auto px-6 text-center">
+          <div className="inline-flex items-center gap-2 bg-blue-500/10 border border-blue-500/30 px-4 py-1.5 rounded-full text-blue-400 text-sm font-bold mb-8 animate-fade-in">
+            <Zap size={14} /> Công nghệ AI 2026 cho chủ nhà trọ
+          </div>
+          <h1 className="text-5xl lg:text-8xl font-black tracking-tight leading-[1.1] mb-8">
+            Phần mềm quản lý nhà trọ <br />
+            <span className="bg-gradient-to-r from-blue-400 via-cyan-300 to-indigo-400 bg-clip-text text-transparent italic">thông minh bằng AI</span>
+          </h1>
+          <p className="max-w-3xl mx-auto text-lg lg:text-2xl text-slate-400 mb-12 leading-relaxed">
+            NhatroAI giúp bạn tự động hóa toàn bộ quy trình: Quản lý khách thuê, tự động chốt số điện nước, nhắc nợ qua Zalo. <br className="hidden lg:block" /> 
+            <strong>Tiết kiệm đến 80% thời gian</strong> mỗi tháng và chấm dứt tình trạng thất thoát doanh thu.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <button onClick={() => setShowRegForm(true)} className="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 text-white font-black text-lg px-10 py-5 rounded-2xl shadow-xl shadow-blue-600/30 transition-all transform hover:scale-105">
+              Bắt đầu dùng thử miễn phí
+            </button>
+            <button onClick={() => navigate('/demo')} className="w-full sm:w-auto border border-white/20 hover:bg-white/5 py-5 px-10 rounded-2xl font-bold transition">
+              Xem bản demo hệ thống
+            </button>
+          </div>
+          <div className="mt-16 flex items-center justify-center gap-8 grayscale opacity-50">
+            <span className="text-sm font-bold uppercase tracking-widest text-slate-500">Được tin dùng bởi 5000+ chủ nhà trọ trên toàn quốc</span>
           </div>
         </div>
       </header>
 
-      <section className="relative z-10 px-5 pb-20 lg:px-8">
-        <div className="mx-auto max-w-7xl">
-          <div className="grid gap-6 lg:grid-cols-3">
-            {features.map((feature) => {
-              const Icon = feature.icon;
-              return (
-                <div
-                  key={feature.title}
-                  className="group rounded-[32px] border border-white/10 bg-slate-950/70 p-8 shadow-[0_18px_70px_rgba(2,6,23,0.28)] backdrop-blur-xl transition hover:border-white/15 hover:bg-slate-900/80"
-                >
-                  <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${feature.iconWrapClassName}`}>
-                    <Icon className={`h-7 w-7 ${feature.iconClassName}`} />
-                  </div>
-                  <h2 className="mt-6 text-2xl font-bold text-white">{feature.title}</h2>
-                  <p className="mt-3 text-base leading-7 text-slate-300">{feature.description}</p>
+      {/* Pain Points Section */}
+      <section className="py-24 bg-slate-900/40">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl lg:text-5xl font-black mb-4">Bạn đang mệt mỏi vì quản lý nhà trọ truyền thống?</h2>
+            <p className="text-slate-400">Những vấn đề nhức nhối mà hấu hết các chủ nhà đều gặp phải</p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              { 
+                icon: Clock, 
+                title: "Mất quá nhiều thời gian", 
+                desc: "Phải đi từng phòng ghi số điện, số nước bằng tay, rồi mất hàng tiếng đồng hồ để nhẩm tính tiền." 
+              },
+              { 
+                icon: MessageSquare, 
+                title: "Khó khăn khi thu tiền", 
+                desc: "Thủ tục nhắc nợ ngại ngùng, khách thuê hay quên, chậm trễ đóng tiền gây ảnh hưởng dòng vốn." 
+              },
+              { 
+                icon: FileText, 
+                title: "Rối loạn sổ sách", 
+                desc: "Dùng Excel hay sổ tay dễ nhầm lẫn thông tin khách thuê, mất hợp đồng hoặc không nắm được lịch sử thanh toán." 
+              }
+            ].map((item, id) => (
+              <div key={id} className="bg-slate-900 border border-white/5 p-8 rounded-[2.5rem] hover:border-blue-500/30 transition group">
+                <div className="bg-red-500/10 text-red-400 w-14 h-14 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-red-500 group-hover:text-white transition">
+                  <item.icon size={28} />
                 </div>
-              );
-            })}
+                <h3 className="text-xl font-bold mb-4">{item.title}</h3>
+                <p className="text-slate-400 leading-relaxed text-sm">{item.desc}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      <section className="px-5 pb-24 lg:px-8">
-        <div className="mx-auto max-w-5xl overflow-hidden rounded-[36px] border border-white/10 bg-[linear-gradient(135deg,rgba(37,99,235,0.22),rgba(12,18,36,0.92)_50%,rgba(34,211,238,0.14))] p-8 shadow-[0_30px_100px_rgba(15,23,42,0.45)] lg:p-12">
-          <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+      {/* Solution/Feature Section */}
+      <section id="features" className="py-32">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid lg:grid-cols-2 gap-20 items-center">
             <div>
-              <h2 className="text-3xl font-black text-white sm:text-4xl">Sẵn sàng tối ưu hóa việc quản lý?</h2>
-              <p className="mt-4 max-w-2xl text-base leading-7 text-slate-200">
-                Tham gia cùng hơn 5000+ chủ nhà trọ đang sử dụng Smart Rental Manager.
-              </p>
+              <div className="text-blue-400 font-bold uppercase tracking-widest text-sm mb-4">Mọi thứ hội tụ trong NhatroAI</div>
+              <h2 className="text-4xl lg:text-6xl font-black leading-tight mb-8">
+                Phần mềm quản lý <br /> giúp bạn rảnh tay thực sự
+              </h2>
+              <div className="space-y-8">
+                {[
+                  { 
+                    h: "Quản lý khách thuê & Phòng trọ", 
+                    p: "Số hóa toàn bộ thông tin CMND/CCCD, hợp đồng điện tử. Theo dõi trạng thái phòng (đã thuê/trống) trực quan trên sơ đồ.",
+                    icon: Users
+                  },
+                  { 
+                    h: "Tính tiền điện nước tự động", 
+                    p: "Nhập chỉ số điện nước nhanh chóng, app tự động nhân đơn giá theo bậc thang hoặc giá cố định, xuất hóa đơn ngay.",
+                    icon: Calculator
+                  },
+                  { 
+                    h: "Nhắc thu tiền đa kênh", 
+                    p: "Tự động gửi thông báo tổng tiền cần đóng qua Zalo, Email hoặc SMS để khách chuẩn bị tiền trước ngày thu.",
+                    icon: MessageSquare
+                  },
+                  { 
+                    h: "Báo cáo doanh thu & Lợi nhuận", 
+                    p: "Báo cáo chi tiết thu chi hàng tháng, năm. Giúp bạn nắm rõ hiệu quả kinh doanh của từng tòa nhà mà không cần cộng sổ.",
+                    icon: BarChart3
+                  }
+                ].map((f, i) => (
+                  <div key={i} className="flex gap-6">
+                    <div className="bg-blue-600 shrink-0 w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-600/30">
+                      <f.icon size={24} />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold mb-2">{f.h}</h3>
+                      <p className="text-slate-400 text-sm leading-relaxed">{f.p}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="flex flex-col gap-4 sm:flex-row lg:flex-col">
-              <button
-                type="button"
-                onClick={() => navigate('/login')}
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-7 py-4 text-base font-bold text-slate-950 transition hover:bg-slate-100"
-              >
-                Tạo tài khoản ngay
-                <ArrowRight className="h-5 w-5" />
-              </button>
-              <button
-                type="button"
-                onClick={openHostLogin}
-                className="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/5 px-7 py-4 text-base font-semibold text-white transition hover:bg-white/10"
-              >
-                Đăng nhập Host
-              </button>
+            <div className="relative">
+               <div className="absolute inset-0 bg-blue-500/20 blur-[120px] rounded-full" />
+               <div className="relative rounded-[3rem] border border-white/10 bg-slate-900 p-4 shadow-2xl">
+                  <img 
+                    src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&q=80" 
+                    alt="Dashboard" 
+                    className="rounded-[2.5rem] w-full"
+                  />
+                  <div className="absolute -bottom-10 -right-10 bg-blue-600 p-8 rounded-3xl shadow-2xl hidden lg:block">
+                     <TrendingUp className="text-white mb-2" size={32} />
+                     <div className="text-2xl font-black text-white">Tăng 30%</div>
+                     <div className="text-blue-100 text-xs">Hiệu quả thu hồi nợ</div>
+                  </div>
+               </div>
             </div>
           </div>
         </div>
+      </section>
+
+      {/* Comparison Section (SEO Powerhouse) */}
+      <section className="py-24 bg-[#0a1120]">
+        <div className="max-w-5xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-black mb-4">Excel vs NhatroAI</h2>
+            <p className="text-slate-400">Tại sao bạn nên chuyển đổi số ngay hôm nay?</p>
+          </div>
+          <div className="overflow-hidden rounded-[2rem] border border-white/10 shadow-2xl">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-white/5 border-b border-white/10">
+                  <th className="p-6 md:p-8 font-bold text-slate-300">Tính năng</th>
+                  <th className="p-6 md:p-8 font-bold text-red-400">Excel / Sổ tay</th>
+                  <th className="p-6 md:p-8 font-bold text-blue-400 bg-blue-500/5">NhatroAI App</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {[
+                  ["Truy cập dữ liệu", "Chỉ dùng được trên máy tính", "Mọi lúc, mọi nơi trên điện thoại"],
+                  ["Tính tiền điện nước", "Tự bấm máy tính, dễ sai sót", "Quét số hoặc nhập chỉ số, tự cộng hóa đơn"],
+                  ["Nhắc nợ khách thuê", "Phải gọi điện/nhắn tin từng người", "Tự động gửi thông báo qua Zalo"],
+                  ["Lưu trữ hợp đồng", "Dễ thất lạc file/giấy tờ", "Lưu trữ đám mây, bảo mật tuyệt đối"],
+                  ["Báo cáo tài chính", "Cực mệt khi tổng hợp cuối tháng", "Xem ngay báo cáo chỉ với 1 click"]
+                ].map((row, i) => (
+                  <tr key={i} className="hover:bg-white/5 transition">
+                    <td className="p-6 md:p-8 text-sm font-bold text-slate-200">{row[0]}</td>
+                    <td className="p-6 md:p-8 text-sm text-slate-400 flex items-center gap-2">
+                       <XCircle className="text-red-500 shrink-0" size={16} /> {row[1]}
+                    </td>
+                    <td className="p-6 md:p-8 text-sm text-blue-100 bg-blue-500/5 items-center gap-2">
+                       <div className="flex items-center gap-2 font-medium">
+                         <CheckCircle2 className="text-emerald-400 shrink-0" size={16} /> {row[2]}
+                       </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="mt-8 text-center text-slate-500 text-xs italic">
+            * Dựa trên khảo sát thực tế từ 1000 khách hàng chuyển đổi từ Excel sang NhatroAI
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Section Overlay */}
+      <section className="py-24 relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-6 text-center">
+            <h2 className="text-4xl lg:text-6xl font-black mb-8">NhatroAI có giá bao nhiêu?</h2>
+            <p className="max-w-2xl mx-auto text-slate-400 mb-12">Chúng tôi cung cấp các gói linh hoạt dựa trên số lượng phòng bạn quản lý. Miễn phí dùng thử 7 ngày không giới hạn tính năng.</p>
+            <button onClick={() => navigate('/pricing')} className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold px-12 py-5 rounded-2xl shadow-xl hover:scale-105 transition">
+               Xem bảng giá chi tiết
+            </button>
+        </div>
+      </section>
+
+      {/* FAQ Section (SEO Text) */}
+      <section className="py-24 bg-slate-900/40">
+        <div className="max-w-4xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-black mb-4">Câu hỏi thường gặp</h2>
+            <p className="text-slate-400">Giải đáp thắc mắc về phần mềm quản lý nhà trọ NhatroAI</p>
+          </div>
+          <div className="space-y-6">
+            {[
+              {
+                q: "Phần mềm quản lý nhà trọ NhatroAI có khó dùng không?",
+                a: "Hoàn toàn không. NhatroAI được thiết kế tối giản, tập trung vào trải nghiệm của những chủ nhà trọ không quá rành về công nghệ. Chỉ mất 15 phút làm quen là bạn có thể thành thạo các tính năng chốt điện nước và tạo hợp đồng."
+              },
+              {
+                q: "Tôi có thể quản lý nhiều tòa nhà cùng lúc trên một tài khoản không?",
+                a: "Có. NhatroAI hỗ trợ quản lý đa điểm. Bạn có thể thêm hàng chục tòa nhà ở các khu vực khác nhau và phân quyền cho quản lý chi nhánh cực kỳ dễ dàng."
+              },
+              {
+                q: "Dữ liệu của tôi có bị mất nếu tôi không gia hạn phần mềm?",
+                a: "Không. NhatroAI cam kết bảo vệ dữ liệu của bạn. Ngay cả khi hết hạn, bạn vẫn có thể xem lại dữ liệu cũ. Chúng tôi chỉ tạm khóa các chức năng thêm mới cho đến khi bạn gia hạn dịch vụ."
+              },
+              {
+                q: "App nhắc nợ qua Zalo như thế nào?",
+                a: "Bạn chỉ cần nhấn nút 'Gửi thông báo', hệ thống AI sẽ tự động soạn nội dung hóa đơn kèm link thanh toán và gửi trực tiếp vào tin nhắn Zalo của từng khách thuê."
+              }
+            ].map((faq, idx) => (
+              <div key={idx} className="bg-slate-900/60 border border-white/5 p-6 rounded-2xl">
+                 <div className="flex gap-4 items-start">
+                    <HelpCircle className="text-blue-500 shrink-0 mt-1" size={24} />
+                    <div>
+                       <h3 className="text-lg font-bold mb-3">{faq.q}</h3>
+                       <p className="text-slate-400 text-sm leading-relaxed">{faq.a}</p>
+                    </div>
+                 </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Internal Link Section (Money Pages SEO) */}
+      <section className="py-24 border-t border-white/5">
+        <div className="max-w-7xl mx-auto px-6">
+          <h2 className="text-center text-xl font-bold text-slate-500 mb-12 uppercase tracking-widest">Nguồn tài nguyên cho chủ nhà trọ</h2>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+             {[
+               { title: "Phần mềm quản lý nhà trọ", path: "/phan-mem-quan-ly-nha-tro" },
+               { title: "App quản lý phòng trọ Mobile", path: "/app-quan-ly-phong-tro" },
+               { title: "Mẫu file quản lý nhà trọ Excel", path: "/quan-ly-nha-tro-bang-excel" },
+               { title: "App tính tiền điện nước", path: "/phan-mem-tinh-tien-dien-nuoc" }
+             ].map((link, i) => (
+               <button 
+                key={i} 
+                onClick={() => navigate(link.path)}
+                className="bg-white/5 hover:bg-white/10 border border-white/10 p-6 rounded-2xl text-center transition group flex flex-col items-center gap-3"
+               >
+                 <MousePointer2 className="text-slate-500 group-hover:text-blue-400 transition" size={20} />
+                 <span className="text-sm font-bold text-slate-300 group-hover:text-white">{link.title}</span>
+               </button>
+             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Bottom CTA */}
+      <section className="py-32 px-6">
+         <div className="max-w-5xl mx-auto bg-gradient-to-br from-blue-700 to-indigo-800 rounded-[3rem] p-10 lg:p-20 text-center relative overflow-hidden shadow-2xl">
+            <div className="absolute top-0 right-0 p-10 opacity-10">
+               <Zap size={200} />
+            </div>
+            <h2 className="text-4xl lg:text-6xl font-black mb-8">Nâng tầm quản lý 5.0 ngay hôm nay</h2>
+            <p className="text-blue-100 text-lg lg:text-xl mb-12 max-w-2xl mx-auto">Chỉ mất 2 phút để khởi tạo hệ thống và thay đổi hoàn toàn cách bạn vận hành nhà trọ.</p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <button onClick={() => setShowRegForm(true)} className="bg-white text-blue-800 font-black px-12 py-5 rounded-2xl text-lg hover:bg-blue-50 transition">
+                   Dùng thử miễn phí 7 ngày
+                </button>
+                <button onClick={() => navigate('/login')} className="bg-blue-900/40 border border-blue-400/30 text-white font-bold px-12 py-5 rounded-2xl text-lg hover:bg-blue-900 transition">
+                   Đăng nhập hệ thống
+                </button>
+            </div>
+         </div>
       </section>
 
       <LandingFooter />
+
+      {/* Animation Styles */}
+      <style>{`
+        @keyframes fade-in {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+          animation: fade-in 1s ease-out forwards;
+        }
+      `}</style>
     </div>
   );
 }

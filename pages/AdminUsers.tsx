@@ -12,6 +12,7 @@ const ROLE_LABELS: Record<UserRole, string> = {
     ADMIN_L2: 'Admin cấp 2',
     SALES: 'Nhân viên Sales',
     ACCOUNTANT: 'Kế toán',
+    MARKETING: 'Marketing',
     HOST: 'Chủ nhà (Host)',
     TENANT: 'Người thuê',
 };
@@ -21,6 +22,7 @@ const ROLE_COLORS: Record<UserRole, string> = {
     ADMIN_L2: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400',
     SALES: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
     ACCOUNTANT: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400',
+    MARKETING: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400',
     HOST: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
     TENANT: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
 };
@@ -262,7 +264,7 @@ export default function AdminUsers() {
                     />
                 </div>
                 <div className="flex gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl w-fit">
-                    {(['ALL', 'SUPER_ADMIN', 'ADMIN_L2', 'SALES', 'ACCOUNTANT', 'HOST', 'TENANT'] as const).map(role => (
+                    {(['ALL', 'SUPER_ADMIN', 'ADMIN_L2', 'SALES', 'ACCOUNTANT', 'MARKETING', 'HOST', 'TENANT'] as const).map(role => (
                         <button
                             key={role}
                             onClick={() => setFilterRole(role)}
@@ -410,6 +412,7 @@ export default function AdminUsers() {
                                         <option value="ADMIN_L2">Admin cấp 2</option>
                                         <option value="SALES">Nhân viên Sales</option>
                                         <option value="ACCOUNTANT">Kế toán</option>
+                                        <option value="MARKETING">Marketing</option>
                                         <option value="HOST">Chủ nhà (Host)</option>
                                         <option value="TENANT">Người thuê</option>
                                     </select>

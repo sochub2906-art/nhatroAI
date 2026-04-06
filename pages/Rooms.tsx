@@ -291,20 +291,18 @@ export default function Rooms() {
                                     <button
                                         type="button"
                                         onClick={event => { event.preventDefault(); openEditModal(room); }}
-                                        className="z-10 rounded-lg p-2 text-gray-400 transition hover:bg-blue-50 hover:text-blue-500 dark:hover:bg-blue-500/10"
-                                        title="Sửa phòng"
+                                        className="z-10 flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 shadow-sm transition hover:bg-slate-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700/50 dark:hover:text-blue-400"
                                     >
-                                        <Edit className="h-4 w-4" />
+                                        <Edit className="h-4 w-4" /> Sửa
                                     </button>
                                     <button
                                         type="button"
                                         onClick={event => { event.preventDefault(); openDeleteModal(room); }}
-                                        className="z-10 rounded-lg p-2 text-gray-400 transition hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10"
-                                        title="Xóa phòng"
+                                        className="z-10 flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 shadow-sm transition hover:bg-rose-50 hover:border-rose-200 hover:text-rose-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-rose-900/30 dark:hover:bg-rose-900/20 dark:hover:text-rose-400"
                                     >
-                                        <Trash2 className="h-4 w-4" />
+                                        <Trash2 className="h-4 w-4" /> Xóa
                                     </button>
-                                    <Link to={`/app/rooms/${room.id}`} className="z-10 flex items-center gap-1 rounded-lg bg-blue-50 p-2 text-sm font-medium text-blue-600 transition hover:bg-blue-100 hover:text-blue-700 dark:bg-blue-600/10 dark:text-blue-500 dark:hover:bg-blue-600 dark:hover:text-white">
+                                    <Link to={`/app/rooms/${room.id}`} className="z-10 flex items-center gap-1.5 rounded-xl bg-blue-50 px-3 py-2 text-sm font-medium text-blue-600 shadow-sm transition hover:bg-blue-100 hover:text-blue-700 dark:bg-blue-600/10 dark:text-blue-500 dark:hover:bg-blue-600 dark:hover:text-white">
                                         Chi tiết <ArrowRight className="h-4 w-4" />
                                     </Link>
                                 </div>
@@ -314,27 +312,25 @@ export default function Rooms() {
                                         <p className="text-xs text-gray-500 dark:text-gray-400">Giá thuê</p>
                                         <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{formatCurrency(room.price)}</p>
                                     </div>
-                                    <div className="flex gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={event => { event.preventDefault(); openEditModal(room); }}
-                                        className="z-10 rounded-lg p-2 text-gray-400 transition hover:bg-blue-50 hover:text-blue-500 dark:hover:bg-blue-500/10"
-                                        title="Sửa phòng"
-                                    >
-                                        <Edit className="h-4 w-4" />
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={event => { event.preventDefault(); openDeleteModal(room); }}
-                                        className="z-10 rounded-lg p-2 text-gray-400 transition hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10"
-                                        title="Xóa phòng"
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </button>
-                                    <Link to={`/app/rooms/${room.id}`} className="z-10 flex items-center gap-1 rounded-lg bg-blue-50 p-2 text-sm font-medium text-blue-600 transition hover:bg-blue-100 hover:text-blue-700 dark:bg-blue-600/10 dark:text-blue-500 dark:hover:bg-blue-600 dark:hover:text-white">
-                                        Chi tiết <ArrowRight className="h-4 w-4" />
-                                    </Link>
-                                </div>
+                                    <div className="mt-4 flex flex-wrap gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={event => { event.preventDefault(); openEditModal(room); }}
+                                            className="z-10 flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 shadow-sm transition hover:bg-slate-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700/50 dark:hover:text-blue-400"
+                                        >
+                                            <Edit className="h-4 w-4" /> Sửa
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={event => { event.preventDefault(); openDeleteModal(room); }}
+                                            className="z-10 flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 shadow-sm transition hover:bg-rose-50 hover:border-rose-200 hover:text-rose-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-rose-900/30 dark:hover:bg-rose-900/20 dark:hover:text-rose-400"
+                                        >
+                                            <Trash2 className="h-4 w-4" /> Xóa
+                                        </button>
+                                        <Link to={`/app/rooms/${room.id}`} className="z-10 flex items-center gap-1.5 rounded-xl bg-blue-50 px-3 py-2 text-sm font-medium text-blue-600 shadow-sm transition hover:bg-blue-100 hover:text-blue-700 dark:bg-blue-600/10 dark:text-blue-500 dark:hover:bg-blue-600 dark:hover:text-white">
+                                            Chi tiết <ArrowRight className="h-4 w-4" />
+                                        </Link>
+                                    </div>
                             </div>
                             )}
                         </div>

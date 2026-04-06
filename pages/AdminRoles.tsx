@@ -22,6 +22,7 @@ import {
     Calculator,
     UserCog,
     Crown,
+    Megaphone,
 } from 'lucide-react';
 
 const ROLE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -29,6 +30,7 @@ const ROLE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = 
     ADMIN_L2: UserCog,
     SALES: Briefcase,
     ACCOUNTANT: Calculator,
+    MARKETING: Megaphone,
 };
 
 const ROLE_COLORS: Record<string, { bg: string; border: string; text: string; badge: string; ring: string }> = {
@@ -59,6 +61,13 @@ const ROLE_COLORS: Record<string, { bg: string; border: string; text: string; ba
         text: 'text-violet-500',
         badge: 'bg-violet-500/15 text-violet-500',
         ring: 'ring-violet-500/20',
+    },
+    MARKETING: {
+        bg: 'bg-gradient-to-br from-rose-500/10 to-pink-400/10',
+        border: 'border-rose-500/30',
+        text: 'text-rose-500',
+        badge: 'bg-rose-500/15 text-rose-500',
+        ring: 'ring-rose-500/20',
     },
 };
 
@@ -371,6 +380,7 @@ export default function AdminRoles() {
                     <li>• <strong>Admin cấp 2</strong> là người hỗ trợ quản trị, có thể bị giới hạn một số quyền nhạy cảm.</li>
                     <li>• <strong>Nhân viên Sales</strong> chỉ cần truy cập dashboard, quản lý host và lead.</li>
                     <li>• <strong>Kế toán</strong> tập trung vào doanh thu, thanh toán và xuất báo cáo.</li>
+                    <li>• <strong>Marketing</strong> quản lý nội dung CMS, trang SEO và chiến dịch tiếp thị.</li>
                     <li>• Thay đổi quyền sẽ áp dụng <strong>lần đăng nhập tiếp theo</strong> của người dùng.</li>
                 </ul>
             </div>

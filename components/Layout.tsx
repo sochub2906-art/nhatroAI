@@ -232,7 +232,7 @@ export default function Layout() {
                 </header>
 
                 <div className="relative flex-1 min-w-0 overflow-hidden">
-                    <div className="mobile-safe-bottom h-full min-w-0 overflow-y-auto p-4 sm:p-6">
+                    <div className="mobile-safe-bottom h-full min-w-0 overflow-y-auto p-3 sm:p-6">
                         {isBlocked && (
                             <div className="absolute inset-0 z-[100] flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-md">
                                 <div className="relative w-full max-w-lg overflow-hidden rounded-[2rem] border border-red-100 bg-white p-6 text-center shadow-2xl dark:border-red-900/30 dark:bg-slate-900 sm:p-8">

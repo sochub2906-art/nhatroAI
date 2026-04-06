@@ -23,11 +23,11 @@ export default function LandingFooter() {
   const companyPages = pages.filter(p => p.category === 'company');
 
   const ci = adminSettings?.companyInfo;
-  const brandName = ci?.name || 'Smart Rental';
-  const description = ci?.description || 'Nền tảng quản lý nhà trọ, căn hộ dịch vụ thông minh số 1 Việt Nam. Tự động hóa quy trình, tiết kiệm thời gian, tối ưu chi phí.';
+  const brandName = ci?.name || 'NhatroAI';
+  const description = ci?.description || 'Nền tảng quản lý nhà trọ, căn hộ dịch vụ thông minh bằng công nghệ AI số 1 Việt Nam. Tự động hóa quy trình, tiết kiệm thời gian, tối ưu chi phí vận hành.';
   const address = ci?.address || 'Số 1, Đường công nghệ, Quận Nam Từ Liêm, Hà Nội';
   const phone = ci?.phone || '1800 000 000';
-  const email = ci?.email || 'support@smartrental.ai';
+  const email = ci?.email || 'support@nhatroai.vn';
   const fbUrl = ci?.facebookUrl || '#';
   const logoUrl = adminSettings?.logoUrl;
 
@@ -71,7 +71,7 @@ export default function LandingFooter() {
               {companyPages.map(page => (
                 <li key={page.id}>
                   <button 
-                    onClick={() => navigate(`/p/${page.slug}`)}
+                    onClick={() => navigate(`/${page.slug}`)}
                     className="text-sm text-slate-400 hover:text-blue-400 transition-colors"
                   >
                     {page.title}
@@ -96,7 +96,7 @@ export default function LandingFooter() {
               {supportPages.map(page => (
                 <li key={page.id}>
                   <button 
-                    onClick={() => navigate(`/p/${page.slug}`)}
+                    onClick={() => navigate(`/${page.slug}`)}
                     className="text-sm text-slate-400 hover:text-blue-400 transition-colors"
                   >
                     {page.title}
@@ -113,7 +113,7 @@ export default function LandingFooter() {
               {legalPages.map(page => (
                 <li key={page.id}>
                   <button 
-                    onClick={() => navigate(`/p/${page.slug}`)}
+                    onClick={() => navigate(`/${page.slug}`)}
                     className="text-sm text-slate-400 hover:text-blue-400 transition-colors"
                   >
                     {page.title}

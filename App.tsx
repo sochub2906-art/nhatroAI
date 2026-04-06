@@ -24,7 +24,6 @@ const AdminRoles = React.lazy(() => import('./pages/AdminRoles'));
 const SalesDashboard = React.lazy(() => import('./pages/SalesDashboard'));
 const DynamicPage = React.lazy(() => import('./pages/DynamicPage'));
 
-
 const Dashboard = React.lazy(() => import('./pages/Dashboard'));
 const Revenue = React.lazy(() => import('./pages/Revenue'));
 const Buildings = React.lazy(() => import('./pages/Buildings'));
@@ -78,6 +77,13 @@ export default function App() {
                         <>
                             <Route path="/" element={<PWALandingRedirect />} />
                             <Route path="/p/:slug" element={<LazyScreen><DynamicPage /></LazyScreen>} />
+                            
+                            {/* SEO Money Pages (Managed via CMS) */}
+                            <Route path="/phan-mem-quan-ly-nha-tro" element={<LazyScreen><DynamicPage slugOverride="phan-mem-quan-ly-nha-tro" /></LazyScreen>} />
+                            <Route path="/app-quan-ly-phong-tro" element={<LazyScreen><DynamicPage slugOverride="app-quan-ly-phong-tro" /></LazyScreen>} />
+                            <Route path="/quan-ly-nha-tro-bang-excel" element={<LazyScreen><DynamicPage slugOverride="quan-ly-nha-tro-bang-excel" /></LazyScreen>} />
+                            <Route path="/phan-mem-tinh-tien-dien-nuoc" element={<LazyScreen><DynamicPage slugOverride="phan-mem-tinh-tien-dien-nuoc" /></LazyScreen>} />
+                            
                             <Route path="/pricing" element={<LazyScreen><Pricing /></LazyScreen>} />
                             <Route path="/login" element={<LazyScreen><LoginPage /></LazyScreen>} />
                             <Route path="/demo" element={<LazyScreen><DemoPreview /></LazyScreen>} />

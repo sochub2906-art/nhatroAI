@@ -19,7 +19,7 @@ export default function AdminLayout() {
     const navigate = useNavigate();
     const [sidebarOpen, setSidebarOpen] = React.useState(false);
 
-    const adminRoles = ['SUPER_ADMIN', 'ADMIN_L2', 'ACCOUNTANT'] as const;
+    const adminRoles = ['SUPER_ADMIN', 'ADMIN_L2', 'ACCOUNTANT', 'MARKETING'] as const;
     if (!currentUser || !adminRoles.includes(currentUser.role as any)) {
         return <div className="min-h-screen flex items-center justify-center text-slate-500">Không có quyền truy cập.</div>;
     }
@@ -53,7 +53,7 @@ export default function AdminLayout() {
                         <div className="w-9 h-9 rounded-full bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center text-white text-xs font-bold">{currentUser.avatar}</div>
                         <div>
                             <p className="text-sm font-medium truncate">{currentUser.name}</p>
-                            <p className="text-xs text-red-500 font-medium">Super Admin</p>
+                            <p className="text-xs text-red-500 font-medium">{currentUser.role === 'SUPER_ADMIN' ? 'Super Admin' : currentUser.role === 'ADMIN_L2' ? 'Admin L2' : currentUser.role === 'MARKETING' ? 'Marketing' : currentUser.role === 'ACCOUNTANT' ? 'Kế toán' : currentUser.role}</p>
                         </div>
                     </div>
                 </div>
@@ -108,7 +108,7 @@ export default function AdminLayout() {
                 </header>
 
                 {/* Page Content */}
-                <div className="flex-1 overflow-auto p-4 lg:p-6">
+                <div className="flex-1 overflow-auto p-3 lg:p-6">
                     <Outlet />
                 </div>
             </main>

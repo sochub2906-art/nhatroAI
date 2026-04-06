@@ -12,20 +12,26 @@ import { CmsPage } from '../types';
 import LandingFooter from '../components/LandingFooter';
 import BlockRenderer from '../components/cms/BlockRenderer';
 
-export default function DynamicPage() {
-    const { slug } = useParams();
+export default function DynamicPage({ slugOverride }: { slugOverride?: string }) {
+    const { slug: routeSlug } = useParams();
     const navigate = useNavigate();
     const [page, setPage] = useState<CmsPage | null>(null);
     const [loading, setLoading] = useState(true);
     const [showMobileMenu, setShowMobileMenu] = useState(false);
 
+    const slug = slugOverride || routeSlug || window.location.pathname.substring(1);
+
     useEffect(() => {
         const fetchPage = async () => {
             setLoading(true);
             const data = await sbGetCmsPages();
-            const found = data.find(p => p.slug === slug && p.isPublished);
+            const found = data.find(p => p.slug === slug);
             setPage(found || null);
             setLoading(false);
+            
+            if (found) {
+                document.title = `${found.title} - NhatroAI`;
+            }
         };
         fetchPage();
     }, [slug]);
@@ -65,7 +71,7 @@ export default function DynamicPage() {
                         onClick={() => navigate('/')}
                         className="text-left text-2xl font-black tracking-tight text-transparent bg-gradient-to-r from-blue-400 via-cyan-300 to-indigo-300 bg-clip-text"
                     >
-                        Smart Rental
+                        NhatroAI
                     </button>
 
                     <div className="hidden items-center gap-6 lg:flex">
@@ -117,7 +123,7 @@ export default function DynamicPage() {
                                     </button>
                                     <h1 className="text-3xl md:text-5xl font-bold text-white mb-4 leading-tight">{page.title}</h1>
                                     <div className="flex items-center gap-4 text-sm text-slate-500 border-b border-white/10 pb-8">
-                                        <span>Cập nhật: {new Date(page.updatedAt).toLocaleDateString('vi-VN')}</span>
+                                        <span>Cập nhật: {new Date(page.updatedAt || new Date()).toLocaleDateString('vi-VN')}</span>
                                     </div>
                                 </div>
                             )}
@@ -135,7 +141,7 @@ export default function DynamicPage() {
 
                             <h1 className="text-3xl md:text-5xl font-bold text-white mb-6 leading-tight">{page.title}</h1>
                             <div className="flex items-center gap-4 text-sm text-slate-500 mb-12 border-b border-white/10 pb-8">
-                                <span>Cập nhật lúc: {new Date(page.updatedAt).toLocaleDateString('vi-VN')}</span>
+                                <span>Cập nhật lúc: {new Date(page.updatedAt || new Date()).toLocaleDateString('vi-VN')}</span>
                                 <span className="capitalize">{page.category === 'legal' ? 'Pháp lý' : page.category === 'support' ? 'Hỗ trợ' : 'Về công ty'}</span>
                             </div>
 
@@ -153,3 +159,4 @@ export default function DynamicPage() {
         </div>
     );
 }
+

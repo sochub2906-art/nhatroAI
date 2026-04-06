@@ -271,13 +271,24 @@ export default function QuickContractWizard({ onClose, initialRoomId = '' }: Pro
                                             onChange={event => setContract({ ...contract, price: +event.target.value })}
                                         />
                                     </div>
+                                    <div>
+                                        <label className="mb-1 block text-sm text-slate-500">Tiền cọc (VNĐ)</label>
+                                        <input
+                                            type="number"
+                                            className="w-full rounded-xl border border-slate-300 bg-slate-50 p-2.5 outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800"
+                                            value={contract.depositAmount || 0}
+                                            onChange={event => setContract({ ...contract, depositAmount: +event.target.value })}
+                                            placeholder="VD: 2000000"
+                                        />
+                                        <p className="mt-1 text-xs text-slate-400">Số tiền khách cọc khi ký hợp đồng</p>
+                                    </div>
                                 </div>
 
                                 <div className="space-y-4">
-                                    <h4 className="border-b border-slate-100 pb-2 font-semibold text-purple-600 dark:border-slate-800 dark:text-purple-400">Äiá»‡n, NÆ°á»›c & Dá»‹ch vá»¥</h4>
+                                    <h4 className="border-b border-slate-100 pb-2 font-semibold text-purple-600 dark:border-slate-800 dark:text-purple-400">Điện, Nước & Dịch vụ</h4>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label className="mb-1 block text-sm text-slate-500">GiÃ¡ Ä‘iá»‡n (VNÄ/kWh)</label>
+                                            <label className="mb-1 block text-sm text-slate-500">Giá điện (VNĐ/kWh)</label>
                                             <input
                                                 required
                                                 type="number"

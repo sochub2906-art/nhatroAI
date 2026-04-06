@@ -1,4 +1,4 @@
-export type UserRole = 'SUPER_ADMIN' | 'ADMIN_L2' | 'SALES' | 'ACCOUNTANT' | 'HOST' | 'TENANT';
+export type UserRole = 'SUPER_ADMIN' | 'ADMIN_L2' | 'SALES' | 'ACCOUNTANT' | 'MARKETING' | 'HOST' | 'TENANT';
 
 // ═══════════════════════════════════════
 // ROLE PERMISSION SYSTEM
@@ -45,6 +45,7 @@ export const ADMIN_ROLE_META: { role: UserRole; label: string; desc: string; loc
     { role: 'ADMIN_L2',    label: 'Admin cấp 2',    desc: 'Quản trị viên hỗ trợ, quyền hạn bị giới hạn' },
     { role: 'SALES',       label: 'Nhân viên Sales', desc: 'Quản lý lead, host và pipeline bán hàng' },
     { role: 'ACCOUNTANT',  label: 'Kế toán',         desc: 'Theo dõi doanh thu, thanh toán và giao dịch' },
+    { role: 'MARKETING',   label: 'Marketing',       desc: 'Quản lý nội dung CMS, SEO và chiến dịch tiếp thị' },
 ];
 
 export const DEFAULT_ROLE_PERMISSIONS: Record<string, AdminPermission[]> = {
@@ -52,6 +53,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, AdminPermission[]> = {
     ADMIN_L2: ['view_dashboard', 'manage_users', 'manage_hosts', 'manage_sales', 'manage_cms', 'view_revenue', 'export_data'],
     SALES: ['view_dashboard', 'manage_sales', 'manage_hosts'],
     ACCOUNTANT: ['view_dashboard', 'view_revenue', 'manage_payments', 'manage_subscriptions', 'export_data'],
+    MARKETING: ['view_dashboard', 'manage_cms'],
 };
 
 export interface AppUser {
@@ -194,6 +196,7 @@ export interface Contract {
     extraServices?: ContractService[];
     isActive: boolean;
     endDate: string;
+    depositAmount?: number;
     hostId?: string;
     createdAt?: string;
 }

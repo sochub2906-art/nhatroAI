@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../AppContext';
 import { UserRole } from '../types';
-import { Shield, ShoppingBag, ChevronRight, KeyRound, ArrowLeft, CheckCircle, Mail, UserCog, Calculator } from 'lucide-react';
+import { Shield, ShoppingBag, ChevronRight, KeyRound, ArrowLeft, CheckCircle, Mail, UserCog, Calculator, Megaphone } from 'lucide-react';
 import { auth } from '../firebase';
 import { sendPasswordResetEmail } from 'firebase/auth';
 
@@ -11,6 +11,7 @@ const adminRoles: { role: UserRole; label: string; desc: string; icon: any; colo
   { role: 'ADMIN_L2', label: 'Admin cấp 2', desc: 'Quản trị viên hỗ trợ, quyền hạn giới hạn', icon: UserCog, color: 'text-sky-400', gradient: 'from-sky-500/20 to-blue-500/20 border-sky-500/30' },
   { role: 'SALES', label: 'Nhân viên Sales', desc: 'Quản lý Host & Lead bán hàng', icon: ShoppingBag, color: 'text-amber-400', gradient: 'from-amber-500/20 to-yellow-500/20 border-amber-500/30' },
   { role: 'ACCOUNTANT', label: 'Kế toán', desc: 'Theo dõi doanh thu và thanh toán', icon: Calculator, color: 'text-violet-400', gradient: 'from-violet-500/20 to-purple-500/20 border-violet-500/30' },
+  { role: 'MARKETING', label: 'Marketing', desc: 'Quản lý nội dung CMS và chiến dịch SEO', icon: Megaphone, color: 'text-rose-400', gradient: 'from-rose-500/20 to-pink-500/20 border-rose-500/30' },
 ];
 
 export default function AdminLoginPage() {
@@ -35,13 +36,14 @@ export default function AdminLoginPage() {
     const user = await login(email, password);
     
     if (user) {
-      const adminishRoles: UserRole[] = ['SUPER_ADMIN', 'ADMIN_L2', 'SALES', 'ACCOUNTANT'];
+      const adminishRoles: UserRole[] = ['SUPER_ADMIN', 'ADMIN_L2', 'SALES', 'ACCOUNTANT', 'MARKETING'];
       if (user.role === selected || (adminishRoles.includes(user.role) && user.role === selected)) {
         switch (selected) {
           case 'SUPER_ADMIN':
           case 'ADMIN_L2': navigate('/admin/dashboard'); break;
           case 'SALES': navigate('/sales/dashboard'); break;
           case 'ACCOUNTANT': navigate('/admin/dashboard'); break;
+          case 'MARKETING': navigate('/admin/cms'); break;
           default: navigate('/admin/dashboard'); break;
         }
       } else {
@@ -107,7 +109,7 @@ export default function AdminLoginPage() {
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-2 mb-2">
             <Shield className="w-8 h-8 text-red-400" />
-            <h1 className="text-3xl font-black bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">Smart Rental</h1>
+            <h1 className="text-3xl font-black bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">NhatroAI</h1>
           </div>
           <p className="text-slate-400 text-sm font-medium">Hệ thống quản trị nội bộ</p>
           <p className="text-slate-600 text-xs mt-1">nhatrobe.web.app</p>
@@ -160,7 +162,7 @@ export default function AdminLoginPage() {
           Đăng nhập
         </button>
 
-        <p className="text-center text-slate-600 text-xs mt-6">Chỉ dành cho nhân viên nội bộ Smart Rental</p>
+        <p className="text-center text-slate-600 text-xs mt-6">Chỉ dành cho nhân viên nội bộ NhatroAI</p>
       </div>
     </div>
   );

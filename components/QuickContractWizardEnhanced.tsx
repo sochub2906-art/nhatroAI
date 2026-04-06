@@ -517,15 +517,29 @@ export default function QuickContractWizardEnhanced({ onClose, initialRoomId = '
                                             className="w-full rounded-xl border border-slate-300 bg-slate-50 p-2.5 outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800"
                                         />
                                     </div>
-                                    <input
-                                        required
-                                        type="number"
-                                        min={0}
-                                        value={contract.price}
-                                        onChange={(event) => setContract((prev) => ({ ...prev, price: Number(event.target.value) }))}
-                                        placeholder="Giá thuê phòng / tháng"
-                                        className="w-full rounded-xl border border-slate-300 bg-slate-50 p-2.5 outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800"
-                                    />
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <input
+                                                required
+                                                type="number"
+                                                min={0}
+                                                value={contract.price}
+                                                onChange={(event) => setContract((prev) => ({ ...prev, price: Number(event.target.value) }))}
+                                                placeholder="Giá thuê (VNĐ)"
+                                                className="w-full rounded-xl border border-slate-300 bg-slate-50 p-2.5 outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800"
+                                            />
+                                        </div>
+                                        <div>
+                                            <input
+                                                type="number"
+                                                min={0}
+                                                value={contract.depositAmount || 0}
+                                                onChange={(event) => setContract((prev) => ({ ...prev, depositAmount: Number(event.target.value) }))}
+                                                placeholder="Tiền cọc (VNĐ)"
+                                                className="w-full rounded-xl border border-slate-300 bg-slate-50 p-2.5 outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800"
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div className="space-y-4">
