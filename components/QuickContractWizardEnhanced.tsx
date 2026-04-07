@@ -188,9 +188,9 @@ export default function QuickContractWizardEnhanced({ onClose, initialRoomId = '
     };
 
     return (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-sm">
-            <div className="my-4 flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900">
-                <div className="flex shrink-0 flex-col gap-4 border-b border-slate-100 bg-slate-50 p-6 dark:border-slate-800 dark:bg-slate-800/40 sm:flex-row sm:items-center sm:justify-between">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto bg-black/60 p-2 backdrop-blur-sm sm:p-4">
+            <div className="my-auto flex max-h-[95vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900 sm:max-h-[90vh]">
+                <div className="flex shrink-0 flex-col gap-4 border-b border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800/40 sm:p-6 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h3 className="flex items-center gap-2 text-xl font-bold text-slate-900 dark:text-white">
                             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-sm text-white shadow-lg shadow-blue-500/20">
@@ -205,20 +205,20 @@ export default function QuickContractWizardEnhanced({ onClose, initialRoomId = '
                         </p>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                        <div className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium ${step === 1 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'text-slate-400'}`}>
-                            <span className={`flex h-6 w-6 items-center justify-center rounded-full text-xs ${step === 1 ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-500 dark:bg-slate-700'}`}>1</span>
+                    <div className="flex items-center gap-1 sm:gap-2">
+                        <div className={`flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-medium sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm ${step === 1 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'text-slate-400'}`}>
+                            <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] sm:h-6 sm:w-6 sm:text-xs ${step === 1 ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-500 dark:bg-slate-700'}`}>1</span>
                             Khách thuê
                         </div>
-                        <ChevronRight className="h-4 w-4 text-slate-300 dark:text-slate-600" />
-                        <div className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium ${step === 2 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'text-slate-400'}`}>
-                            <span className={`flex h-6 w-6 items-center justify-center rounded-full text-xs ${step === 2 ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-500 dark:bg-slate-700'}`}>2</span>
+                        <ChevronRight className="h-3 w-3 text-slate-300 dark:text-slate-600 sm:h-4 sm:w-4" />
+                        <div className={`flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-medium sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm ${step === 2 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'text-slate-400'}`}>
+                            <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] sm:h-6 sm:w-6 sm:text-xs ${step === 2 ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-500 dark:bg-slate-700'}`}>2</span>
                             Hợp đồng
                         </div>
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6">
+                <div className="flex-1 overflow-y-auto p-4 sm:p-6">
                     {step === 1 ? (
                         <form id="quick-contract-step-1" onSubmit={handleNext} className="space-y-6">
                             {/* Mode Switcher */}
@@ -416,24 +416,33 @@ export default function QuickContractWizardEnhanced({ onClose, initialRoomId = '
                                             </button>
                                         </div>
 
-                                        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                                            <input
-                                                value={customer.idNumber || ''}
-                                                onChange={(event) => setCustomer((prev) => ({ ...prev, idNumber: event.target.value }))}
-                                                placeholder="Số CCCD"
-                                                className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                                            />
-                                            <SmartDateInput
-                                                value={customer.idIssueDate || ''}
-                                                onChange={(value) => setCustomer((prev) => ({ ...prev, idIssueDate: value }))}
-                                                className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                                            />
-                                            <input
-                                                value={customer.idIssuePlace || ''}
-                                                onChange={(event) => setCustomer((prev) => ({ ...prev, idIssuePlace: event.target.value }))}
-                                                placeholder="Nơi cấp"
-                                                className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                                            />
+                                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                                            <div>
+                                                <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Số CCCD</label>
+                                                <input
+                                                    value={customer.idNumber || ''}
+                                                    onChange={(event) => setCustomer((prev) => ({ ...prev, idNumber: event.target.value }))}
+                                                    placeholder="Nhập số CCCD"
+                                                    className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Ngày cấp</label>
+                                                <SmartDateInput
+                                                    value={customer.idIssueDate || ''}
+                                                    onChange={(value) => setCustomer((prev) => ({ ...prev, idIssueDate: value }))}
+                                                    className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Nơi cấp</label>
+                                                <input
+                                                    value={customer.idIssuePlace || ''}
+                                                    onChange={(event) => setCustomer((prev) => ({ ...prev, idIssuePlace: event.target.value }))}
+                                                    placeholder="Ví dụ: Cục Cảnh sát..."
+                                                    className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                                                />
+                                            </div>
                                         </div>
                                     </div>
 
@@ -443,35 +452,47 @@ export default function QuickContractWizardEnhanced({ onClose, initialRoomId = '
                                             Thông tin cư trú
                                         </div>
 
-                                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                            <input
-                                                value={customer.permanentAddress || ''}
-                                                onChange={(event) => setCustomer((prev) => ({
-                                                    ...prev,
-                                                    permanentAddress: event.target.value,
-                                                    currentAddress: prev.currentAddress || event.target.value,
-                                                }))}
-                                                placeholder="Địa chỉ thường trú"
-                                                className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                                            />
-                                            <input
-                                                value={customer.currentAddress || ''}
-                                                onChange={(event) => setCustomer((prev) => ({ ...prev, currentAddress: event.target.value }))}
-                                                placeholder="Địa chỉ tạm trú hiện tại"
-                                                className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                                            />
-                                            <input
-                                                value={customer.placeOfOrigin || ''}
-                                                onChange={(event) => setCustomer((prev) => ({ ...prev, placeOfOrigin: event.target.value }))}
-                                                placeholder="Nguyên quán"
-                                                className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                                            />
-                                            <input
-                                                value={customer.nationality || 'Việt Nam'}
-                                                onChange={(event) => setCustomer((prev) => ({ ...prev, nationality: event.target.value }))}
-                                                placeholder="Quốc tịch"
-                                                className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                                            />
+                                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                            <div>
+                                                <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Địa chỉ thường trú</label>
+                                                <input
+                                                    value={customer.permanentAddress || ''}
+                                                    onChange={(event) => setCustomer((prev) => ({
+                                                        ...prev,
+                                                        permanentAddress: event.target.value,
+                                                        currentAddress: prev.currentAddress || event.target.value,
+                                                    }))}
+                                                    placeholder="Ghi theo sổ hộ khẩu"
+                                                    className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Địa chỉ tạm trú</label>
+                                                <input
+                                                    value={customer.currentAddress || ''}
+                                                    onChange={(event) => setCustomer((prev) => ({ ...prev, currentAddress: event.target.value }))}
+                                                    placeholder="Địa chỉ hiện tại"
+                                                    className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Nguyên quán</label>
+                                                <input
+                                                    value={customer.placeOfOrigin || ''}
+                                                    onChange={(event) => setCustomer((prev) => ({ ...prev, placeOfOrigin: event.target.value }))}
+                                                    placeholder="Quê quán"
+                                                    className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Quốc tịch</label>
+                                                <input
+                                                    value={customer.nationality || 'Việt Nam'}
+                                                    onChange={(event) => setCustomer((prev) => ({ ...prev, nationality: event.target.value }))}
+                                                    placeholder="Quốc tịch"
+                                                    className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                                                />
+                                            </div>
                                         </div>
                                     </div>
                                 </>
@@ -501,24 +522,31 @@ export default function QuickContractWizardEnhanced({ onClose, initialRoomId = '
                                             ))}
                                         </select>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <SmartDateInput
-                                            required
-                                            value={contract.startDate}
-                                            onChange={(value) => setContract((prev) => ({ ...prev, startDate: value }))}
-                                            className="w-full rounded-xl border border-slate-300 bg-slate-50 p-2.5 outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800"
-                                        />
-                                        <input
-                                            required
-                                            type="number"
-                                            min={1}
-                                            value={contract.durationMonths}
-                                            onChange={(event) => setContract((prev) => ({ ...prev, durationMonths: Number(event.target.value) }))}
-                                            className="w-full rounded-xl border border-slate-300 bg-slate-50 p-2.5 outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800"
-                                        />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                         <div>
+                                            <label className="mb-1 block text-xs font-medium text-slate-500">Ngày bắt đầu</label>
+                                            <SmartDateInput
+                                                required
+                                                value={contract.startDate}
+                                                onChange={(value) => setContract((prev) => ({ ...prev, startDate: value }))}
+                                                className="w-full rounded-xl border border-slate-300 bg-slate-50 p-2.5 outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="mb-1 block text-xs font-medium text-slate-500">Thời hạn (Tháng)</label>
+                                            <input
+                                                required
+                                                type="number"
+                                                min={1}
+                                                value={contract.durationMonths}
+                                                onChange={(event) => setContract((prev) => ({ ...prev, durationMonths: Number(event.target.value) }))}
+                                                className="w-full rounded-xl border border-slate-300 bg-slate-50 p-2.5 outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                        <div>
+                                            <label className="mb-1 block text-xs font-medium text-slate-500">Giá thuê (đ/tháng)</label>
                                             <input
                                                 required
                                                 type="number"
@@ -530,6 +558,7 @@ export default function QuickContractWizardEnhanced({ onClose, initialRoomId = '
                                             />
                                         </div>
                                         <div>
+                                            <label className="mb-1 block text-xs font-medium text-slate-500">Tiền đặt cọc (đ)</label>
                                             <input
                                                 type="number"
                                                 min={0}
@@ -658,38 +687,39 @@ export default function QuickContractWizardEnhanced({ onClose, initialRoomId = '
                     <button
                         type="button"
                         onClick={onClose}
-                        className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                        className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 sm:px-5 sm:py-2.5 sm:text-base"
                     >
                         Đóng
                     </button>
-                    <div className="flex flex-1 justify-end gap-3">
+                    <div className="flex flex-1 justify-end gap-2 sm:gap-3">
                         {step === 2 && (
                             <button
                                 type="button"
                                 onClick={() => setStep(1)}
-                                className="flex items-center gap-2 rounded-xl bg-slate-200 px-5 py-2.5 font-medium text-slate-800 transition hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
+                                className="flex items-center gap-2 rounded-xl bg-slate-200 px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600 sm:px-5 sm:py-2.5 sm:text-base"
                             >
                                 <ChevronLeft className="h-4 w-4" />
-                                Quay lại
+                                <span className="hidden sm:inline">Quay lại</span>
+                                <span className="sm:hidden">Lùi</span>
                             </button>
                         )}
                         {step === 1 ? (
                             <button
                                 type="submit"
                                 form="quick-contract-step-1"
-                                className="flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-2.5 font-medium text-white shadow-lg shadow-blue-500/20 transition hover:bg-blue-700"
+                                className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-blue-500/20 transition hover:bg-blue-700 sm:px-6 sm:py-2.5 sm:text-base"
                             >
-                                Tiếp tục: Lập hợp đồng
+                                <span>Tiếp tục</span>
                                 <ChevronRight className="h-4 w-4" />
                             </button>
                         ) : (
                             <button
                                 type="submit"
                                 form="quick-contract-step-2"
-                                className="flex items-center gap-2 rounded-xl bg-green-600 px-6 py-2.5 font-medium text-white shadow-lg shadow-green-500/20 transition hover:bg-green-700"
+                                className="flex items-center gap-2 rounded-xl bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-green-500/20 transition hover:bg-green-700 sm:px-6 sm:py-2.5 sm:text-base"
                             >
                                 <CheckCircle className="h-4 w-4" />
-                                Hoàn tất và ký hợp đồng
+                                <span>Hoàn tất</span>
                             </button>
                         )}
                     </div>
