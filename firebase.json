@@ -12,6 +12,12 @@
                 "**/.*",
                 "**/node_modules/**"
             ],
+            "rewrites": [
+                {
+                    "source": "**",
+                    "destination": "/index.html"
+                }
+            ],
             "headers": [
                 {
                     "source": "/index.html",
@@ -40,6 +46,12 @@
                 "firebase.json",
                 "**/.*",
                 "**/node_modules/**"
+            ],
+            "rewrites": [
+                {
+                    "source": "**",
+                    "destination": "/index.html"
+                }
             ],
             "headers": [
                 {

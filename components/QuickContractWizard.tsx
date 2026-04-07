@@ -29,7 +29,7 @@ export default function QuickContractWizard({ onClose, initialRoomId = '' }: Pro
         avatarImage: '',
         idFrontImage: '',
         idBackImage: '',
-        nationality: 'Viá»‡t Nam',
+        nationality: 'Việt Nam',
     });
 
     const [contract, setContract] = useState<Contract>({
@@ -47,13 +47,13 @@ export default function QuickContractWizard({ onClose, initialRoomId = '' }: Pro
         endDate: '',
     });
 
-    const availableRooms = rooms.filter(room => room.status !== 'Äang sá»­a' || room.id === contract.roomId);
+    const availableRooms = rooms.filter(room => room.status !== 'Đang sửa' || room.id === contract.roomId);
 
     const getRoomSelectLabel = (roomId: string) => {
         const room = rooms.find(item => item.id === roomId);
         if (!room) return roomId;
         const occupancyCount = getRoomOccupancyCount(roomId, contracts);
-        const occupancyLabel = occupancyCount === 0 ? 'trá»‘ng' : `${occupancyCount} khÃ¡ch Ä‘ang á»Ÿ`;
+        const occupancyLabel = occupancyCount === 0 ? 'trống' : `${occupancyCount} khách đang ở`;
         return `${room.name} - ${formatCurrency(room.price)} (${occupancyLabel})`;
     };
 
@@ -73,7 +73,9 @@ export default function QuickContractWizard({ onClose, initialRoomId = '' }: Pro
     const toggleService = (serviceId: string) => {
         setContract(prev => ({
             ...prev,
-            extraServices: prev.extraServices?.map(service => service.id === serviceId ? { ...service, enabled: !service.enabled } : service) || [],
+            extraServices: prev.extraServices?.map(service => (
+                service.id === serviceId ? { ...service, enabled: !service.enabled } : service
+            )) || [],
         }));
     };
 
@@ -88,7 +90,7 @@ export default function QuickContractWizard({ onClose, initialRoomId = '' }: Pro
             onClose();
         } catch (error) {
             console.error(error);
-            alert('CÃ³ lá»—i xáº£y ra khi lÆ°u dá»¯ liá»‡u.');
+            alert('Có lỗi xảy ra khi lưu dữ liệu.');
         }
     };
 
@@ -97,19 +99,19 @@ export default function QuickContractWizard({ onClose, initialRoomId = '' }: Pro
             <div className="my-4 flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-0 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
                 <div className="flex shrink-0 flex-col items-start justify-between gap-4 border-b border-slate-100 bg-slate-50 p-6 dark:border-slate-800 dark:bg-slate-800/50 sm:flex-row sm:items-center">
                     <h3 className="flex items-center gap-2 text-xl font-bold">
-                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-sm text-white shadow-lg shadow-blue-500/20">âš¡</span>
-                        Táº¡o Nhanh: KhÃ¡ch & Há»£p Äá»“ng
+                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-sm text-white shadow-lg shadow-blue-500/20">⚡</span>
+                        Tạo nhanh: Khách & Hợp đồng
                     </h3>
 
                     <div className="flex items-center gap-2">
                         <div className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${step === 1 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'text-slate-400'}`}>
                             <span className={`flex h-6 w-6 items-center justify-center rounded-full text-xs ${step === 1 ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-500 dark:bg-slate-700'}`}>1</span>
-                            KhÃ¡ch hÃ ng
+                            Khách hàng
                         </div>
                         <ChevronRight className="h-4 w-4 text-slate-300 dark:text-slate-600" />
                         <div className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${step === 2 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'text-slate-400'}`}>
                             <span className={`flex h-6 w-6 items-center justify-center rounded-full text-xs ${step === 2 ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-500 dark:bg-slate-700'}`}>2</span>
-                            Há»£p Ä‘á»“ng
+                            Hợp đồng
                         </div>
                     </div>
                 </div>
@@ -119,7 +121,7 @@ export default function QuickContractWizard({ onClose, initialRoomId = '' }: Pro
                         <form id="step1-form" onSubmit={handleNext} className="space-y-6">
                             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                                 <div>
-                                    <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">MÃ£ KH (Tá»± Ä‘á»™ng)</label>
+                                    <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Mã KH (Tự động)</label>
                                     <input
                                         required
                                         type="text"
@@ -129,7 +131,7 @@ export default function QuickContractWizard({ onClose, initialRoomId = '' }: Pro
                                     />
                                 </div>
                                 <div>
-                                    <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Há» tÃªn *</label>
+                                    <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Họ tên *</label>
                                     <input
                                         required
                                         type="text"
@@ -137,14 +139,14 @@ export default function QuickContractWizard({ onClose, initialRoomId = '' }: Pro
                                         className="w-full rounded-xl border border-slate-300 bg-slate-50 p-2.5 text-slate-900 outline-none transition focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                                         value={customer.name}
                                         onChange={event => setCustomer({ ...customer, name: event.target.value })}
-                                        placeholder="VD: Nguyá»…n VÄƒn A"
+                                        placeholder="VD: Nguyễn Văn A"
                                     />
                                 </div>
                             </div>
 
                             <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
                                 <div>
-                                    <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Äiá»‡n thoáº¡i *</label>
+                                    <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Điện thoại *</label>
                                     <input
                                         required
                                         type="text"
@@ -177,7 +179,7 @@ export default function QuickContractWizard({ onClose, initialRoomId = '' }: Pro
                                 <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                     <p className="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-200">
                                         <CreditCard className="h-4 w-4 text-blue-500" />
-                                        ThÃ´ng tin Ä‘á»‹nh danh (CCCD)
+                                        Thông tin định danh (CCCD)
                                     </p>
                                     <button
                                         type="button"
@@ -185,12 +187,12 @@ export default function QuickContractWizard({ onClose, initialRoomId = '' }: Pro
                                         className="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-medium text-blue-700 transition hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-300"
                                     >
                                         <QrCode className="h-4 w-4" />
-                                        QuÃ©t QR CCCD
+                                        Quét QR CCCD
                                     </button>
                                 </div>
                                 <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                                     <div>
-                                        <label className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Sá»‘ CCCD</label>
+                                        <label className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Số CCCD</label>
                                         <input
                                             type="text"
                                             className="w-full rounded-lg border border-slate-200 bg-white p-2 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
@@ -199,7 +201,7 @@ export default function QuickContractWizard({ onClose, initialRoomId = '' }: Pro
                                         />
                                     </div>
                                     <div>
-                                        <label className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">NgÃ y cáº¥p</label>
+                                        <label className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Ngày cấp</label>
                                         <SmartDateInput
                                             className="w-full rounded-lg border border-slate-200 bg-white p-2 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                                             value={customer.idIssueDate}
@@ -207,7 +209,7 @@ export default function QuickContractWizard({ onClose, initialRoomId = '' }: Pro
                                         />
                                     </div>
                                     <div>
-                                        <label className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">NÆ¡i cáº¥p</label>
+                                        <label className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Nơi cấp</label>
                                         <input
                                             type="text"
                                             className="w-full rounded-lg border border-slate-200 bg-white p-2 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
@@ -222,11 +224,11 @@ export default function QuickContractWizard({ onClose, initialRoomId = '' }: Pro
                         <form id="step2-form" onSubmit={handleFinish} className="space-y-6">
                             <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
                                 <div className="space-y-4">
-                                    <h4 className="border-b border-slate-100 pb-2 font-semibold text-blue-600 dark:border-slate-800 dark:text-blue-400">Chi tiáº¿t thuÃª phÃ²ng</h4>
+                                    <h4 className="border-b border-slate-100 pb-2 font-semibold text-blue-600 dark:border-slate-800 dark:text-blue-400">Chi tiết thuê phòng</h4>
                                     <div>
-                                        <label className="mb-1 block text-sm text-slate-500">Gáº¯n khÃ¡ch vá»›i phÃ²ng</label>
+                                        <label className="mb-1 block text-sm text-slate-500">Gắn khách với phòng</label>
                                         <p className="mb-2 text-xs text-slate-400">
-                                            CÃ³ thá»ƒ chá»n cáº£ phÃ²ng Ä‘ang á»Ÿ Ä‘á»ƒ thÃªm ngÆ°á»i cÃ¹ng phÃ²ng. PhÃ²ng Ä‘ang sá»­a sáº½ bá»‹ khÃ³a.
+                                            Có thể chọn cả phòng đang ở để thêm người cùng phòng. Phòng đang sửa sẽ bị khóa.
                                         </p>
                                         <select
                                             required
@@ -234,7 +236,7 @@ export default function QuickContractWizard({ onClose, initialRoomId = '' }: Pro
                                             value={contract.roomId}
                                             onChange={event => handleRoomChange(event.target.value)}
                                         >
-                                            <option value="">-- Chá»n phÃ²ng khÃ¡ch thuÃª --</option>
+                                            <option value="">-- Chọn phòng khách thuê --</option>
                                             {availableRooms.map(room => (
                                                 <option key={room.id} value={room.id}>{getRoomSelectLabel(room.id)}</option>
                                             ))}
@@ -242,7 +244,7 @@ export default function QuickContractWizard({ onClose, initialRoomId = '' }: Pro
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label className="mb-1 block text-sm text-slate-500">NgÃ y báº¯t Ä‘áº§u</label>
+                                            <label className="mb-1 block text-sm text-slate-500">Ngày bắt đầu</label>
                                             <SmartDateInput
                                                 required
                                                 className="w-full rounded-xl border border-slate-300 bg-slate-50 p-2.5 outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800"
@@ -251,7 +253,7 @@ export default function QuickContractWizard({ onClose, initialRoomId = '' }: Pro
                                             />
                                         </div>
                                         <div>
-                                            <label className="mb-1 block text-sm text-slate-500">Ká»³ háº¡n (thÃ¡ng)</label>
+                                            <label className="mb-1 block text-sm text-slate-500">Kỳ hạn (tháng)</label>
                                             <input
                                                 required
                                                 type="number"
@@ -262,7 +264,7 @@ export default function QuickContractWizard({ onClose, initialRoomId = '' }: Pro
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="mb-1 block text-sm text-slate-500">GiÃ¡ thuÃª phÃ²ng / thÃ¡ng</label>
+                                        <label className="mb-1 block text-sm text-slate-500">Giá thuê phòng / tháng</label>
                                         <input
                                             required
                                             type="number"
@@ -285,7 +287,7 @@ export default function QuickContractWizard({ onClose, initialRoomId = '' }: Pro
                                 </div>
 
                                 <div className="space-y-4">
-                                    <h4 className="border-b border-slate-100 pb-2 font-semibold text-purple-600 dark:border-slate-800 dark:text-purple-400">Điện, Nước & Dịch vụ</h4>
+                                    <h4 className="border-b border-slate-100 pb-2 font-semibold text-purple-600 dark:border-slate-800 dark:text-purple-400">Điện, nước & dịch vụ</h4>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
                                             <label className="mb-1 block text-sm text-slate-500">Giá điện (VNĐ/kWh)</label>
@@ -298,7 +300,7 @@ export default function QuickContractWizard({ onClose, initialRoomId = '' }: Pro
                                             />
                                         </div>
                                         <div>
-                                            <label className="mb-1 block text-sm text-slate-500">GiÃ¡ nÆ°á»›c (VNÄ/khá»‘i)</label>
+                                            <label className="mb-1 block text-sm text-slate-500">Giá nước (VNĐ/khối)</label>
                                             <input
                                                 required
                                                 type="number"
@@ -310,7 +312,7 @@ export default function QuickContractWizard({ onClose, initialRoomId = '' }: Pro
                                     </div>
 
                                     <div className="pt-2">
-                                        <p className="mb-2 text-xs text-slate-500">Tick chá»n cÃ¡c dá»‹ch vá»¥ Ä‘i kÃ¨m:</p>
+                                        <p className="mb-2 text-xs text-slate-500">Tick chọn các dịch vụ đi kèm:</p>
                                         <div className="grid grid-cols-2 gap-2">
                                             {contract.extraServices?.map(service => (
                                                 <button
@@ -340,7 +342,7 @@ export default function QuickContractWizard({ onClose, initialRoomId = '' }: Pro
                         onClick={onClose}
                         className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
                     >
-                        ÄÃ³ng
+                        Đóng
                     </button>
                     <div className="flex flex-1 justify-end gap-3">
                         {step === 2 && (
@@ -349,7 +351,7 @@ export default function QuickContractWizard({ onClose, initialRoomId = '' }: Pro
                                 onClick={() => setStep(1)}
                                 className="flex items-center gap-2 rounded-xl bg-slate-200 px-5 py-2.5 font-medium text-slate-800 transition hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
                             >
-                                <ChevronLeft className="h-4 w-4" /> Quay láº¡i
+                                <ChevronLeft className="h-4 w-4" /> Quay lại
                             </button>
                         )}
                         {step === 1 ? (
@@ -358,7 +360,7 @@ export default function QuickContractWizard({ onClose, initialRoomId = '' }: Pro
                                 form="step1-form"
                                 className="flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-2.5 font-medium text-white shadow-lg shadow-blue-500/20 transition hover:bg-blue-700"
                             >
-                                Tiáº¿p tá»¥c: Láº­p Há»£p Äá»“ng <ChevronRight className="h-4 w-4" />
+                                Tiếp tục: Lập hợp đồng <ChevronRight className="h-4 w-4" />
                             </button>
                         ) : (
                             <button
@@ -366,7 +368,7 @@ export default function QuickContractWizard({ onClose, initialRoomId = '' }: Pro
                                 form="step2-form"
                                 className="flex items-center gap-2 rounded-xl bg-green-600 px-6 py-2.5 font-medium text-white shadow-lg shadow-green-500/20 transition hover:bg-green-700"
                             >
-                                <CheckCircle className="h-4 w-4" /> HoÃ n táº¥t & KÃ½ Há»£p Äá»“ng
+                                <CheckCircle className="h-4 w-4" /> Hoàn tất & ký hợp đồng
                             </button>
                         )}
                     </div>

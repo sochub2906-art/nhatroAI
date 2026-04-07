@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { Routes, Route, Navigate, HashRouter } from 'react-router-dom';
+import { Routes, Route, Navigate, BrowserRouter } from 'react-router-dom';
 import { AppProvider } from './AppContext';
 import { isHostMode, isAdminMode, isDevMode } from './firebase';
 
@@ -71,7 +71,7 @@ export default function App() {
 
     return (
         <AppProvider>
-            <HashRouter>
+            <BrowserRouter>
                 <Routes>
                     {showHost && (
                         <>
@@ -130,7 +130,7 @@ export default function App() {
 
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
-            </HashRouter>
+            </BrowserRouter>
         </AppProvider>
     );
 }

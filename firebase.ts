@@ -13,14 +13,22 @@ import { initializeFirestore } from 'firebase/firestore';
 import { getAnalytics, isSupported } from 'firebase/analytics';
 import { getMessaging } from 'firebase/messaging';
 
+const requiredEnv = (key: keyof ImportMetaEnv) => {
+    const value = import.meta.env[key];
+    if (!value) {
+        throw new Error(`Missing required Firebase env: ${key}`);
+    }
+    return value;
+};
+
 const firebaseConfig = {
-    apiKey: "AIzaSyCkJSeFyvQf2q1PwXSxY0livfT8of6T2rA",
-    authDomain: "nhatroai.firebaseapp.com",
-    projectId: "nhatroai",
-    storageBucket: "nhatroai.firebasestorage.app",
-    messagingSenderId: "381982586693",
-    appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:381982586693:web:f3d9af6b9d2a38b9c5b02c",
-    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-N40TQVFJ7J"
+    apiKey: requiredEnv('VITE_FIREBASE_API_KEY'),
+    authDomain: requiredEnv('VITE_FIREBASE_AUTH_DOMAIN'),
+    projectId: requiredEnv('VITE_FIREBASE_PROJECT_ID'),
+    storageBucket: requiredEnv('VITE_FIREBASE_STORAGE_BUCKET'),
+    messagingSenderId: requiredEnv('VITE_FIREBASE_MESSAGING_SENDER_ID'),
+    appId: requiredEnv('VITE_FIREBASE_APP_ID'),
+    measurementId: requiredEnv('VITE_FIREBASE_MEASUREMENT_ID')
 };
 
 // Initialize Firebase

@@ -1,9 +1,94 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function tokenRole() {
+      return isSignedIn() && request.auth.token.role != null
+        ? request.auth.token.role
+        : '';
+    }
+
+    function roleFromUserDoc() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
+        : '';
+    }
+
+    function currentRole() {
+      return tokenRole() != '' ? tokenRole() : roleFromUserDoc();
+    }
+
+    // Emergency bootstrap for primary owner account when custom claims are not ready.
+    function isBootstrapOwner() {
+      return isSignedIn() && request.auth.token.email == 'antonionguyen246@gmail.com';
+    }
+
+    function isSuperAdmin() {
+      return currentRole() == 'SUPER_ADMIN' || isBootstrapOwner();
+    }
+
+    function isAdminOperator() {
+      return currentRole() in ['SUPER_ADMIN', 'ADMIN_L2'] || isBootstrapOwner();
+    }
+
+    function isStaffRole() {
+      return currentRole() in [
+        'SUPER_ADMIN',
+        'ADMIN_L2',
+        'SALES',
+        'ACCOUNTANT',
+        'MARKETING'
+      ] || isBootstrapOwner();
+    }
+
+    match /users/{userId} {
+      // Read own profile, or read any profile as admin.
+      allow get: if isSignedIn() && (userId == request.auth.uid || isAdminOperator());
+      allow list: if isAdminOperator();
+
+      // Admin can create any user. A user can bootstrap only self with non-admin role.
+      allow create: if isAdminOperator()
+        || (
+          isSignedIn()
+          && userId == request.auth.uid
+          && request.resource.data.id == userId
+          && request.resource.data.role in ['HOST', 'TENANT']
+        );
+
+      // Admin can update any user. Self-update is limited to non-privilege fields.
+      allow update: if isAdminOperator()
+        || (
+          isSignedIn()
+          && userId == request.auth.uid
+          && request.resource.data.id == resource.data.id
+          && request.resource.data.role == resource.data.role
+          && request.resource.data.email == resource.data.email
+        );
+
+      allow delete: if isSuperAdmin();
+    }
+
+    match /settings/{docId} {
+      // Pricing tiers can be read by any signed-in user.
+      allow get: if isSignedIn() && docId == 'pricingTiers';
+
+      // Admin settings are restricted to staff roles only.
+      allow get: if isStaffRole() && docId == 'admin';
+
+      allow list: if false;
+
+      // Only admin operators can change settings.
+      allow create, update: if isAdminOperator() && docId in ['admin', 'pricingTiers'];
+      allow delete: if isSuperAdmin() && docId in ['admin', 'pricingTiers'];
+    }
+
+    // Deny everything else by default.
     match /{document=**} {
-      // Cho phép đọc ghi ngay lập tức do hệ thống dựa trên xác thực bằng tài khoản do Admin quản lý.
-      allow read, write: if true;
+      allow read, write: if false;
     }
   }
 }

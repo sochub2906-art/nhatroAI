@@ -37,7 +37,17 @@ import {
     resetSnapshotCircuitBreakers, sbSaveUserPushToken, sbDeleteUserPushToken
 } from './services/supabaseService';
 import { buildHostPaymentWebhookUrl, normalizeHostPaymentGatewayConfig } from './utils/paymentGateway';
-import { DEFAULT_SUBSCRIPTION_CHANNELS, buildPlanFeatureList, normalizeSubscriptionChannels } from './utils/subscriptionPayments';
+import { buildPlanFeatureList } from './utils/subscriptionPayments';
+import {
+    createEmptyHostSnapshot,
+    DEFAULT_ADMIN_SETTINGS,
+    DEFAULT_ADMIN_USER,
+    DEFAULT_PRICING_TIERS,
+    hasHostSnapshotData,
+    normalizeAdminSettingsState,
+    reconcileRoomsWithContracts,
+} from './context/appDefaults';
+import { IMPORT_MAX_CHARS, type ImportPayload, validateImportPayload } from './context/importValidation';
 
 type PendingSheetOperation = {
     type: 'upsert' | 'delete';
@@ -51,43 +61,6 @@ const SESSION_ROLE_STORAGE_KEY = 'currentRole';
 const SESSION_USER_ID_STORAGE_KEY = 'currentUserId';
 
 const isRemoteSheetId = (sheetId?: string | null) => Boolean(sheetId && !sheetId.startsWith('local_'));
-
-const createEmptyHostSnapshot = (): HostSheetData => ({
-    buildings: [],
-    rooms: [],
-    customers: [],
-    contracts: [],
-    payments: [],
-    equipment: [],
-    serviceRecords: [],
-});
-
-const hasHostSnapshotData = (snapshot?: HostSheetData | null) => Boolean(
-    snapshot
-    && (
-        snapshot.buildings.length
-        || snapshot.rooms.length
-        || snapshot.customers.length
-        || snapshot.contracts.length
-        || snapshot.payments.length
-        || snapshot.equipment.length
-        || snapshot.serviceRecords.length
-    ),
-);
-
-const reconcileRoomsWithContracts = (rooms: Room[], contracts: Contract[]): Room[] => {
-    const occupiedRoomIds = new Set(
-        contracts
-            .filter(contract => contract.isActive)
-            .map(contract => contract.roomId),
-    );
-
-    return rooms.map(room => {
-        if (room.status === '\u0110ang s\u1eeda') return room;
-        const nextStatus: Room['status'] = occupiedRoomIds.has(room.id) ? '\u0110ang \u1edf' : 'Tr\u1ed1ng';
-        return room.status === nextStatus ? room : { ...room, status: nextStatus };
-    });
-};
 
 // CONTEXT TYPE
 interface AppContextType {
@@ -188,86 +161,6 @@ export const SERVICE_PRESETS: ContractService[] = [
 
 const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
 const PERIODIC_SYNC_MS = 10 * 60 * 1000;
-
-const DEFAULT_ADMIN_USER: AppUser = {
-    id: 'U_SA',
-    name: 'Super Admin',
-    email: 'antonionguyen246@gmail.com',
-    phone: '0900000001',
-    role: 'SUPER_ADMIN',
-    avatar: 'SA',
-    status: 'active',
-    createdAt: '2024-01-01',
-};
-
-const DEFAULT_PRICING_TIERS: PricingTier[] = [
-    {
-        id: 'basic',
-        name: 'Cá nhân',
-        price: 0,
-        maxBuildings: 1,
-        maxRooms: 10,
-        features: ['Tổng quan', 'Quản lý 1 tòa nhà', 'Sơ đồ nhà', 'Phòng trọ (tối đa 10)', 'Khách thuê', 'Hợp đồng', 'Thu chi & Công nợ'],
-        featureFlags: { dashboard: true, buildings: true, roomMap: true, rooms: true, customers: true, contracts: true, payments: true, equipment: false, autoNotify: false, cccdReader: false, imageUpload: false },
-    },
-    {
-        id: 'standard',
-        name: 'Chuyên nghiệp',
-        price: 199000,
-        maxBuildings: 3,
-        maxRooms: 20,
-        features: ['Tất cả tính năng Cá nhân', 'Tối đa 3 tòa nhà / 20 phòng', 'Quản lý trang thiết bị', 'Gửi thông báo tự động', 'Đọc CCCD từ Google Sheets', 'Upload ảnh khách thuê'],
-        featureFlags: { dashboard: true, buildings: true, roomMap: true, rooms: true, customers: true, contracts: true, payments: true, equipment: true, autoNotify: true, cccdReader: true, imageUpload: true },
-    },
-    {
-        id: 'premium',
-        name: 'Doanh nghiệp',
-        price: 499000,
-        maxBuildings: 20,
-        maxRooms: 500,
-        features: ['Tất cả tính năng Chuyên nghiệp', 'Tối đa 20 tòa nhà / 500 phòng', 'API tích hợp khóa cửa', 'Hỗ trợ 24/7 ưu tiên'],
-        featureFlags: { dashboard: true, buildings: true, roomMap: true, rooms: true, customers: true, contracts: true, payments: true, equipment: true, autoNotify: true, cccdReader: true, imageUpload: true },
-    },
-];
-
-const DEFAULT_ADMIN_SETTINGS: AdminSettings = {
-    adminEmail: 'antonionguyen246@gmail.com',
-    salesEmail: 'sales@smart.vn',
-    salesTeamEmails: ['sales@smart.vn'],
-    emailTemplates: {
-        billReminder: 'Kính gửi {{tenant}}, hóa đơn kỳ {{period}} của bạn là {{amount}}. Vui lòng thanh toán trước {{dueDate}}.',
-        welcomeTenant: 'Chào mừng {{tenant}} đến với {{building}}. Phòng {{room}} đã sẵn sàng.',
-        contractExpiry: 'Hợp đồng {{contractId}} sẽ hết hạn vào {{endDate}}. Vui lòng liên hệ để gia hạn.',
-    },
-    paymentConfig: {
-        bankName: 'Vietcombank',
-        accountNumber: '0123456789',
-        accountName: 'CONG TY PHAN MEM SMART RENTAL',
-        webhookUrl: '',
-        gracePeriodDays: 5,
-        subscriptionChannels: DEFAULT_SUBSCRIPTION_CHANNELS,
-    },
-    subscriptionRequests: [],
-};
-
-function normalizeAdminSettingsState(settings?: AdminSettings | null): AdminSettings {
-    const paymentConfig = settings?.paymentConfig || DEFAULT_ADMIN_SETTINGS.paymentConfig!;
-    return {
-        ...DEFAULT_ADMIN_SETTINGS,
-        ...settings,
-        paymentConfig: {
-            ...DEFAULT_ADMIN_SETTINGS.paymentConfig,
-            ...paymentConfig,
-            hostGatewayConfigs: paymentConfig.hostGatewayConfigs || {},
-            subscriptionChannels: normalizeSubscriptionChannels(paymentConfig.subscriptionChannels),
-        },
-        addons: (settings?.addons || DEFAULT_ADMIN_SETTINGS.addons || []).map(addon => ({
-            ...addon,
-            features: addon.features || [],
-        })),
-        subscriptionRequests: settings?.subscriptionRequests || [],
-    };
-}
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
@@ -1162,9 +1055,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 const updatedPayments: Payment[] = [];
                 const next = prev.map(payment => {
                     if (!paidIds.has(payment.id)) return payment;
-                    const updatedPayment = payment.status === 'ÄÃ£ Ä‘Ã³ng'
+                    const updatedPayment = payment.status === 'Đã đóng'
                         ? payment
-                        : { ...payment, status: 'ÄÃ£ Ä‘Ã³ng' as const, billStatus: 'paid' as const, paidDate: payment.paidDate || fallbackPaidDate };
+                        : { ...payment, status: 'Đã đóng' as const, billStatus: 'paid' as const, paidDate: payment.paidDate || fallbackPaidDate };
                     updatedPayments.push(updatedPayment);
                     return updatedPayment;
                 });
@@ -1196,9 +1089,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         mergeHostNotifications,
     ]);
 
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // =======================================
     // IDLE TIMER: Auto-logout after 5 min inactivity
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // =======================================
     useEffect(() => {
         if (!currentUser || currentUser.role === 'SUPER_ADMIN') return;
 
@@ -1206,7 +1099,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             lastActivityRef.current = Date.now();
             if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
             idleTimerRef.current = setTimeout(() => {
-                console.log('â° Idle timeout â€” auto-logout');
+                console.log('Idle timeout - auto-logout');
                 logout();
             }, IDLE_TIMEOUT_MS);
         };
@@ -1222,14 +1115,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         };
     }, [currentUser]);
 
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // =======================================
     // PERIODIC SYNC: Every 10 minutes
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // =======================================
     useEffect(() => {
         if (!currentUser || !getSheetId()) return;
 
         syncIntervalRef.current = setInterval(() => {
-            console.log('ðŸ”„ Periodic sync triggered');
+            console.log('Periodic sync triggered');
             syncNow();
         }, PERIODIC_SYNC_MS);
 
@@ -1238,9 +1131,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         };
     }, [currentUser, getSheetId, syncNow]);
 
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // =======================================
     // AUTH
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // =======================================
     const login = async (rawEmail: string, password: string): Promise<AppUser | null> => {
         const email = rawEmail.trim().toLowerCase();
         try {
@@ -1297,51 +1190,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             }
             return null;
         } catch (error: any) {
-            console.warn('Firebase Auth login failed:', error.code, error.message);
-
-            // Reject fallback if password was explicitly wrong or if requests are blocked due to rate limiting/user not found
-            const isAuthFailure = error?.code === 'auth/wrong-password'
-                || error?.code === 'auth/invalid-credential'
-                || error?.code === 'auth/too-many-requests'
-                || error?.code === 'auth/user-disabled'
-                || error?.code === 'auth/user-not-found';
-
-            if (isAuthFailure) {
-                console.warn('[LOGIN] Auth failed naturally (wrong password/rate limited/not found), rejecting fallback.');
-                if (error?.code === 'auth/too-many-requests') {
-                    alert('Bạn đã nhập sai quá nhiều lần. Quyền đăng nhập tạm thời bị khóa, vui lòng thử lại sau.');
-                }
-                return null;
-            }
-
-            // Fallback: If Firebase Auth fails for other reasons (user-not-found, network, etc.)
-            let fallbackUser = allUsers.find(u => u.email.trim().toLowerCase() === email);
-            if (!fallbackUser && email === 'antonionguyen246@gmail.com') fallbackUser = DEFAULT_ADMIN_USER;
-
-            if (!fallbackUser && email !== 'demohost@gmail.com' && email !== 'demotenant@gmail.com') {
-                try {
-                    console.log('Searching Supabase directly for:', email);
-                    fallbackUser = await sbGetUserByEmail(email);
-                    if (!fallbackUser) {
-                        fallbackUser = await sbGetUserByEmail(rawEmail);
-                    }
-                } catch (sbErr) {
-                    console.error('Direct Supabase fetch failed:', sbErr);
-                }
-            }
-
-            if (fallbackUser) {
-                if (fallbackUser.role === 'TENANT' && !TENANT_LOGIN_ENABLED) {
-                    return null;
-                }
-                console.warn(`[FALLBACK] Logging in ${email} (Firebase error: ${error?.code}).`);
-                resetSnapshotCircuitBreakers();
-                sheetRemoteDisabledRef.current = false;
-                sheetRemoteFailCountRef.current = 0;
-                setCurrentUser(fallbackUser);
-                persistSessionUser(fallbackUser);
-                void hydrateFromSheet(fallbackUser);
-                return fallbackUser;
+            console.warn('Firebase Auth login failed:', error?.code, error?.message);
+            if (error?.code === 'auth/too-many-requests') {
+                alert('Too many failed login attempts. Please try again later.');
             }
             return null;
         }
@@ -1402,13 +1253,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
     };
 
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-    // USER CRUD â†’ Supabase
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // =======================================
+    // USER CRUD -> Supabase
+    // =======================================
     const addUser = async (userData: Omit<AppUser, 'id' | 'createdAt'> & { defaultPassword?: string }): Promise<AppUser | null> => {
         try {
             if (userData.role === 'TENANT' && !TENANT_LOGIN_ENABLED) {
-        alert('Luá»“ng tenant Ä‘ang táº¡m táº¯t. HÃ£y báº­t láº¡i khi cáº§n cho ngÆ°á»i thuÃª Ä‘Äƒng nháº­p.');
+        alert('Luồng tenant đang tạm tắt. Hãy bật lại khi cần cho người thuê đăng nhập.');
                 return null;
             }
 
@@ -1420,7 +1271,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                     await signOut(secondaryAuth);
                 } catch (authErr: any) {
                     console.error("Firebase Auth create user failed:", authErr);
-                    alert(`KhÃ´ng thá»ƒ táº¡o tÃ i khoáº£n Ä‘Äƒng nháº­p (Firebase Auth): ${authErr.message}`);
+                    alert(`Không thể tạo tài khoản đăng nhập (Firebase Auth): ${authErr.message}`);
                     return null; // Stop here, don't create ghost user in Firestore
                 }
             }
@@ -1436,7 +1287,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             return newUser;
         } catch (error: any) {
             console.error("Failed to create user in Supabase:", error);
-            alert(`Lá»—i lÆ°u dá»¯ liá»‡u ngÆ°á»i dÃ¹ng: ${error.message}`);
+            alert(`Lỗi lưu dữ liệu người dùng: ${error.message}`);
             return null;
         }
     };
@@ -1444,17 +1295,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         sbSetUser(user).catch(console.error);
     };
     const deleteUser = (id: string): boolean => {
-        if (currentUser?.role !== 'SUPER_ADMIN') { alert('Chá»‰ Super Admin má»›i cÃ³ quyá»n xÃ³a!'); return false; }
+        if (currentUser?.role !== 'SUPER_ADMIN') { alert('Chỉ Super Admin mới có quyền xóa!'); return false; }
         sbDeleteUser(id).catch(console.error);
         return true;
     };
 
-    // â”€â”€ Permission helper â”€â”€
+    // Permission helper
     const canDelete = () => currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'HOST';
 
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-    // BUILDING â†’ State + Sheet + Cache
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // =======================================
+    // BUILDING -> State + Sheet + Cache
+    // =======================================
     const addBuilding = (b: Building, initialEq?: Partial<Equipment>[]) => {
         const fullB = { ...b, hostId: b.hostId || currentUser?.id, createdAt: b.createdAt || new Date().toISOString() };
         setBuildings(prev => [...prev, fullB]);
@@ -1464,7 +1315,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (initialEq) {
             const newEq = initialEq.map(eq => normalizeEquipment({
                 ...eq, id: `EQ${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-                buildingId: b.id, status: eq.status || 'Tá»‘t',
+                buildingId: b.id, status: eq.status || 'Tốt',
                 purchaseDate: eq.purchaseDate || new Date().toISOString().split('T')[0],
                 price: eq.price || 0,
                 hostId: currentUser?.id,
@@ -1485,9 +1336,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return true;
     };
 
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-    // ROOM â†’ State + Sheet + Cache
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // =======================================
+    // ROOM -> State + Sheet + Cache
+    // =======================================
     const addRoom = (r: Room, initialEq?: Partial<Equipment>[]) => {
         const fullR = { ...r, hostId: r.hostId || currentUser?.id, createdAt: r.createdAt || new Date().toISOString() };
         setRooms(prev => [...prev, fullR]);
@@ -1599,13 +1450,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
     };
 
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-    // CUSTOMER â†’ State + Sheet + Cache
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // =======================================
+    // CUSTOMER -> State + Sheet + Cache
+    // =======================================
     const addCustomer = (c: Customer) => {
         const fullC = {
             ...c,
-            nationality: c.nationality || 'Viá»‡t Nam',
+            nationality: c.nationality || 'Việt Nam',
             currentAddress: c.currentAddress || c.permanentAddress || '',
             residenceAddress: c.residenceAddress || c.currentAddress || c.permanentAddress || '',
             declarationCreated: c.declarationCreated ?? false,
@@ -1621,7 +1472,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const updateCustomer = (customer: Customer) => {
         const nextCustomer: Customer = {
             ...customer,
-        nationality: customer.nationality || 'Viá»‡t Nam',
+        nationality: customer.nationality || 'Việt Nam',
             currentAddress: customer.currentAddress || customer.residenceAddress || customer.permanentAddress || '',
             residenceAddress: customer.residenceAddress || customer.currentAddress || customer.permanentAddress || '',
             declarationCreated: customer.declarationCreated ?? false,
@@ -1639,9 +1490,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (currentUser) deleteCacheItem(currentUser.id, 'customers', id);
     };
 
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-    // CONTRACT â†’ State + Sheet + Cache
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // =======================================
+    // CONTRACT -> State + Sheet + Cache
+    // =======================================
     const createContract = (c: Contract) => {
         const fullC = { ...c, hostId: c.hostId || currentUser?.id, createdAt: c.createdAt || new Date().toISOString() };
         const nextContracts = [...contracts, fullC];
@@ -1712,9 +1563,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         });
     };
 
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-    // SERVICE RECORD â†’ State + Sheet + Cache
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // =======================================
+    // SERVICE RECORD -> State + Sheet + Cache
+    // =======================================
     const createServiceRecordId = (roomId: string, month: string) => `SV_${roomId}_${month.replace(/\//g, '_')}`;
 
     const getBillingPeriodRange = (period: string) => {
@@ -2436,8 +2287,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }, null, 2);
 
     const importData = (jsonData: string) => {
+        if (!currentUser || currentUser.role !== 'SUPER_ADMIN') {
+            console.warn('Import rejected: only SUPER_ADMIN can import data.');
+            return false;
+        }
+        if (typeof jsonData !== 'string' || !jsonData.trim()) {
+            console.error('Import failed: payload is empty.');
+            return false;
+        }
+        if (jsonData.length > IMPORT_MAX_CHARS) {
+            console.error('Import failed: payload is too large.');
+            return false;
+        }
+
         try {
-            const parsed = JSON.parse(jsonData);
+            const parsedUnknown: unknown = JSON.parse(jsonData);
+            const validation = validateImportPayload(parsedUnknown);
+            if ('error' in validation) {
+                console.error('Import failed:', validation.error);
+                return false;
+            }
+
+            const parsed = validation.data;
             const nextContracts = parsed.contracts || contracts;
             if (parsed.buildings) setBuildings(parsed.buildings);
             if (parsed.rooms) setRooms(reconcileRoomsWithContracts(parsed.rooms, nextContracts));
@@ -2450,6 +2321,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             if (parsed.proposals) setProposals(parsed.proposals);
             if (parsed.hostPayments) setHostPayments(parsed.hostPayments);
             if (parsed.crmNotes) setCrmNotes(parsed.crmNotes);
+            if (parsed.userProfile) setUserProfile(parsed.userProfile);
             if (parsed.adminSettings) {
                 const normalizedAdminSettings = normalizeAdminSettingsState(parsed.adminSettings);
                 setAdminSettings(normalizedAdminSettings);
@@ -2460,7 +2332,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 savePricingTiers(parsed.pricingTiers).catch(console.error);
             }
             if (parsed.allUsers) {
-                parsed.allUsers.forEach((user: AppUser) => sbSetUser(user).catch(console.error));
+                parsed.allUsers.forEach((user: AppUser) => {
+                    void sbSetUser(user).catch(console.error);
+                });
             }
             return true;
         } catch (error) {

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { ArrowLeft, Building2, Download, ExternalLink, ReceiptText, RefreshCw, TrendingUp, Wallet, X, Calendar, ChevronRight, Info } from 'lucide-react';
+import { ArrowLeft, Building2, Download, ExternalLink, ReceiptText, RefreshCw, TrendingUp, Wallet, X, ChevronRight, Info } from 'lucide-react';
 import { formatCurrency, useApp } from '../AppContext';
 import { createHostFinancialSnapshot } from '../utils/hostAnalytics';
 import SmartDateInput from '../components/SmartDateInput';
@@ -35,7 +35,7 @@ export default function Revenue() {
     const contractMap = React.useMemo(() => new Map(contracts.map(contract => [contract.id, contract])), [contracts]);
     const roomMap = React.useMemo(() => new Map(rooms.map(room => [room.id, room])), [rooms]);
     const buildingMap = React.useMemo(() => new Map(buildings.map(building => [building.id, building])), [buildings]);
-    const customerMap = React.useMemo(() => new Map(customers.map(c => [c.id, c])), [customers]);
+    const customerMap = React.useMemo(() => new Map(customers.map(customer => [customer.id, customer])), [customers]);
 
     const monthlyData = React.useMemo(() => {
         const months = Array.from({ length: 12 }, (_, index) => {
@@ -91,11 +91,11 @@ export default function Revenue() {
         const endDate = new Date(exportDateRange.end);
         endDate.setHours(23, 59, 59, 999);
 
-        const filteredPayments = payments.filter(p => {
-            if (p.status !== 'Đã đóng' || (p.direction || 'income') !== 'income') return false;
-            const pd = parseDate(p.paidDate || p.sourceDate || p.dueDate);
-            if (!pd) return false;
-            return pd >= startDate && pd <= endDate;
+        const filteredPayments = payments.filter(payment => {
+            if (payment.status !== 'Đã đóng' || (payment.direction || 'income') !== 'income') return false;
+            const paidDate = parseDate(payment.paidDate || payment.sourceDate || payment.dueDate);
+            if (!paidDate) return false;
+            return paidDate >= startDate && paidDate <= endDate;
         });
 
         const BOM = '\uFEFF';
@@ -112,12 +112,12 @@ export default function Revenue() {
             const customerName = customer ? customer.name.replace(/,/g, ' ') : '-';
             const dateStr = payment.paidDate || payment.sourceDate || payment.dueDate || '';
             const amount = payment.paidAmount || payment.amount;
-            const desc = (payment.description || '').replace(/,/g, ' ') || 'Thu tiền';
+            const description = (payment.description || '').replace(/,/g, ' ') || 'Thu tiền';
             total += amount;
 
-            csvContent += `${payment.id || payment.billId || '-'},"${customerName}","${roomName}","${desc}","${dateStr}",${amount}\n`;
+            csvContent += `${payment.id || payment.billId || '-'},"${customerName}","${roomName}","${description}","${dateStr}",${amount}\n`;
         });
-        
+
         csvContent += `\nTỔNG CỘNG,,,,,${total}\n`;
 
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -174,7 +174,7 @@ export default function Revenue() {
                 {summaryCards.map(card => {
                     const Icon = card.icon;
                     return (
-                        <div key={card.label} className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 flex flex-col justify-between">
+                        <div key={card.label} className="flex flex-col justify-between rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
                             <div>
                                 <div className="inline-flex rounded-2xl bg-blue-50 p-3 text-blue-600 dark:bg-blue-950/30 dark:text-blue-300">
                                     <Icon className="h-5 w-5" />
@@ -279,21 +279,23 @@ export default function Revenue() {
 
             {selectedPeriod && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
-                    <div className="w-full max-w-2xl rounded-3xl bg-white shadow-2xl dark:bg-slate-900 flex flex-col max-h-[90vh]">
-                        <div className="flex items-center justify-between border-b border-slate-100 p-6 dark:border-slate-800 shrink-0">
-                            <div>
-                                <h3 className="text-xl font-bold text-slate-900 dark:text-white">
-                                    Chi tiết doanh thu {selectedPeriod === 'day' ? 'hôm nay' : selectedPeriod === 'month' ? 'tháng này' : 'năm nay'}
-                                </h3>
-                                <p className="text-sm text-slate-500 dark:text-slate-400">Danh sách các khoản thanh toán đã đóng trong kỳ.</p>
+                    <div className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-3xl bg-white shadow-2xl dark:bg-slate-900">
+                        <div className="shrink-0 border-b border-slate-100 p-6 dark:border-slate-800">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">
+                                        Chi tiết doanh thu {selectedPeriod === 'day' ? 'hôm nay' : selectedPeriod === 'month' ? 'tháng này' : 'năm nay'}
+                                    </h3>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">Danh sách các khoản thanh toán đã đóng trong kỳ.</p>
+                                </div>
+                                <button onClick={() => setSelectedPeriod(null)} className="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300">
+                                    <X className="h-5 w-5" />
+                                </button>
                             </div>
-                            <button onClick={() => setSelectedPeriod(null)} className="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300 transition">
-                                <X className="h-5 w-5" />
-                            </button>
                         </div>
-                        <div className="p-6 overflow-y-auto flex-1">
+                        <div className="flex-1 overflow-y-auto p-6">
                             {snapshot.income.rawPayments[selectedPeriod].length === 0 ? (
-                                <div className="text-center py-10 text-slate-500 dark:text-slate-400">
+                                <div className="py-10 text-center text-slate-500 dark:text-slate-400">
                                     Không có giao dịch nào trong kỳ này.
                                 </div>
                             ) : (
@@ -306,10 +308,10 @@ export default function Revenue() {
                                         const amount = payment.paidAmount || payment.amount;
 
                                         return (
-                                            <div key={payment.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl bg-slate-50 p-4 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50">
+                                            <div key={payment.id} className="flex flex-col justify-between gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-700/50 dark:bg-slate-800/50 sm:flex-row sm:items-center">
                                                 <div>
                                                     <div className="font-semibold text-slate-900 dark:text-white">{customer?.name || 'Khách không xác định'}</div>
-                                                    <div className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-1">
+                                                    <div className="mt-1 flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
                                                         <span className="font-medium text-slate-700 dark:text-slate-300">Phòng {room?.name || '???'}</span>
                                                         <span>•</span>
                                                         <span>{dateStr.split('T')[0]}</span>
@@ -317,7 +319,7 @@ export default function Revenue() {
                                                 </div>
                                                 <div className="text-left sm:text-right">
                                                     <div className="font-bold text-blue-600 dark:text-blue-400">{formatCurrency(amount)}</div>
-                                                    {payment.description && <div className="text-xs text-slate-500 mt-1 line-clamp-1 max-w-[200px]">{payment.description}</div>}
+                                                    {payment.description && <div className="mt-1 line-clamp-1 max-w-[200px] text-xs text-slate-500">{payment.description}</div>}
                                                 </div>
                                             </div>
                                         );
@@ -325,10 +327,10 @@ export default function Revenue() {
                                 </div>
                             )}
                         </div>
-                        <div className="p-6 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50 rounded-b-3xl shrink-0">
+                        <div className="flex shrink-0 items-center justify-between rounded-b-3xl border-t border-slate-100 bg-slate-50 p-6 dark:border-slate-800 dark:bg-slate-900/50">
                             <span className="text-sm font-medium text-slate-500">Tổng cộng:</span>
                             <span className="text-xl font-bold text-slate-900 dark:text-white">
-                                {formatCurrency(snapshot.income.rawPayments[selectedPeriod].reduce((sum, p) => sum + (p.paidAmount || p.amount), 0))}
+                                {formatCurrency(snapshot.income.rawPayments[selectedPeriod].reduce((sum, payment) => sum + (payment.paidAmount || payment.amount), 0))}
                             </span>
                         </div>
                     </div>
@@ -337,27 +339,27 @@ export default function Revenue() {
 
             {showExportModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
-                    <div className="w-full max-w-md rounded-3xl bg-white shadow-2xl dark:bg-slate-900 p-6">
-                        <div className="flex items-center justify-between mb-6">
+                    <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl dark:bg-slate-900">
+                        <div className="mb-6 flex items-center justify-between">
                             <h3 className="text-xl font-bold text-slate-900 dark:text-white">Tải báo cáo doanh thu</h3>
-                            <button onClick={() => setShowExportModal(false)} className="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300 transition">
+                            <button onClick={() => setShowExportModal(false)} className="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300">
                                 <X className="h-5 w-5" />
                             </button>
                         </div>
-                        
-                        <div className="flex flex-col gap-4 mb-8">
+
+                        <div className="mb-8 flex flex-col gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Từ ngày</label>
-                                <SmartDateInput 
-                                    value={exportDateRange.start} 
+                                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Từ ngày</label>
+                                <SmartDateInput
+                                    value={exportDateRange.start}
                                     onChange={value => setExportDateRange(prev => ({ ...prev, start: value }))}
                                     className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Đến ngày</label>
-                                <SmartDateInput 
-                                    value={exportDateRange.end} 
+                                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Đến ngày</label>
+                                <SmartDateInput
+                                    value={exportDateRange.end}
                                     onChange={value => setExportDateRange(prev => ({ ...prev, end: value }))}
                                     className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                                 />
@@ -365,10 +367,10 @@ export default function Revenue() {
                         </div>
 
                         <div className="flex justify-end gap-3">
-                            <button onClick={() => setShowExportModal(false)} className="px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-xl transition dark:text-slate-300 dark:hover:bg-slate-800">
+                            <button onClick={() => setShowExportModal(false)} className="rounded-xl px-5 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">
                                 Hủy bỏ
                             </button>
-                            <button onClick={handleDownloadCustomCSV} disabled={!exportDateRange.start || !exportDateRange.end} className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition flex items-center gap-2">
+                            <button onClick={handleDownloadCustomCSV} disabled={!exportDateRange.start || !exportDateRange.end} className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50">
                                 <Download size={16} /> Xuất CSV
                             </button>
                         </div>
