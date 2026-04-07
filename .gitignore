@@ -33,6 +33,9 @@ dist-ssr
 !package.json
 !tsconfig.json
 !firebase.json
+.firebase/
+dist-host/
+dist-admin/
 nhatroai-firebase-adminsdk-fbsvc-*.json
 .env*
 .env.admin
